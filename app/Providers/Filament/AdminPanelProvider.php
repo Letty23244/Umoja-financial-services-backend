@@ -2,6 +2,10 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\DashboardStatsOverview;
+use App\Filament\Widgets\DepositsChart;
+use App\Filament\Widgets\LoansChart;
+use App\Filament\Widgets\TransactionsChart;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -40,6 +44,9 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
+                DashboardStatsOverview::class,
+                DepositsChart::class,
+                TransactionsChart::class,
             ])
             ->middleware([
                 EncryptCookies::class,

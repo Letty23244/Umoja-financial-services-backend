@@ -2,39 +2,27 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\User;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
-     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'phone',
         'balance',
-        'role', // Add role to fillable
+        'role',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'two_factor_secret',
@@ -42,22 +30,32 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
-    /**
-     * Get the user's initials
-     */
+    // ── Role helpers ───────────────────────────────────────────
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isUser(): bool
+    {
+        return $this->role === 'user';
+    }
+
+    // ── Filament admin panel access (admins only) ──────────────
+    public static function canAccessPanel(\Filament\Panel $panel): bool
+    {
+        return auth()->user()?->role === 'admin';
+    }
+
+    // ── Helpers ────────────────────────────────────────────────
     public function initials(): string
     {
         return Str::of($this->name)
@@ -66,18 +64,11 @@ class User extends Authenticatable
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
-    public function deposits()
-{
-    return $this->hasMany(Deposit::class);
-}
-    public function loans()
-    {
-        return $this->hasMany(Loan::class);
-    }
 
-    public function user()
+    // ── Relationships ──────────────────────────────────────────
+    public function deposits()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Deposit::class);
     }
 
     public function withdraws()
@@ -85,12 +76,43 @@ class User extends Authenticatable
         return $this->hasMany(Withdraw::class);
     }
 
+    public function savingWallet()
+    {
+        return $this->hasOne(SavingWallet::class);
+    }
+
+    public function savingsGoals()
+    {
+        return $this->hasMany(SavingsGoal::class);
+    }
+
+    public function lockedSavings()
+    {
+        return $this->hasMany(LockedSavings::class);
+    }
+
+    public function autoSavings()
+    {
+        return $this->hasMany(AutoSavings::class);
+    }
+
+    public function profitTrackers()
+    {
+        return $this->hasMany(ProfitTracker::class);
+    }
+
     public function transactions()
-{
-    return $this->hasMany(Transaction::class);
-}
-public function isAdmin(): bool
-{
-    return $this->role === 'admin';
-}
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
 }

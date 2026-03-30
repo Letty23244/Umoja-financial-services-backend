@@ -8,15 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('saving_transactions', function (Blueprint $table) {
+        Schema::create('transactions', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('saving_wallet_id')
+            $table->foreignId('user_id')
                   ->constrained()
-                  ->onDelete('cascade');
+                  ->cascadeOnDelete();
 
-            $table->string('type'); // deposit, withdraw
-            $table->decimal('amount', 15, 2);
+            $table->decimal('amount', 10, 2);
+
+            $table->enum('type', [
+                'deposit',
+                'withdrawal',
+                'saving',
+                'locked_saving',
+                'auto_saving',
+            ]);
+
             $table->string('reference')->nullable();
             $table->text('description')->nullable();
 
@@ -26,6 +34,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('saving_transactions');
+        Schema::dropIfExists('transactions');
     }
 };

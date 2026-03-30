@@ -5,20 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Transaction extends Model
+class SavingTransaction extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'amount',
+        'saving_wallet_id',
         'type',
+        'amount',
         'reference',
         'description',
     ];
 
-    public function user()
+    protected $casts = [
+        'amount' => 'decimal:2',
+    ];
+
+    public function savingWallet()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(SavingWallet::class);
     }
 }
