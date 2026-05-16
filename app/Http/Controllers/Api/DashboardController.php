@@ -22,11 +22,29 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isAdmin()) {
-            return $this->adminDashboard();
-        }
+    $deposits = Deposit::where('user_id', $user->id)->get()->map(function ($d) {
+        return [
+            'type' => 'deposit',
+            'description' => $d->description,
+            'amount' => $d->amount,
+            'date' => $d->created_at,
+        ];
+    });
 
-        return $this->userDashboard($user);
+    $withdraws = Withdraw::where('user_id', $user->id)->get()->map(function ($w) {
+        return [
+            'type' => 'withdrawal',
+            'description' => $w->description,
+            'amount' => $w->amount,
+            'date' => $w->created_at,
+        ];
+    });
+
+    return response()->json(
+        $deposits->merge($withdraws)
+            ->sortByDesc('date')
+            ->values()
+    );
     }
 
     // ── Admin Dashboard ────────────────────────────────────────

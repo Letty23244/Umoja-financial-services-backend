@@ -6,6 +6,9 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Models\Withdraw;
 use App\Http\Controllers\Controller; 
+use App\Models\Transaction;
+use App\Models\Notification;
+use Illuminate\Support\Facades\DB;
 
 class WithdrawController extends Controller
 {
@@ -18,64 +21,55 @@ class WithdrawController extends Controller
     }
 
     // POST /api/withdraws
-    public function store(Request $request)
-    {
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'description' => 'nullable|string',
-        ]);
+   public function store(Request $request)
+{
+    $request->validate([
+        'amount' => 'required|numeric|min:1',
+        'description' => 'nullable|string',
+    ]);
 
+    $user = $request->user();
+
+    DB::beginTransaction();
+
+    try {
+
+        // 1. Create withdraw record
         $withdraw = Withdraw::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'amount' => $request->amount,
             'description' => $request->description ?? null,
         ]);
 
+        // 2. Create STATEMENT (IMPORTANT)
+        Transaction::create([
+            'user_id' => $user->id,
+            'type' => 'withdrawal',
+            'amount' => $request->amount,
+            'description' => $request->description ?? 'Withdrawal',
+        ]);
+
+        // 3. Create NOTIFICATION
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Withdrawal Successful',
+            'message' => 'UGX ' . number_format($request->amount) . ' has been withdrawn.',
+        ]);
+
+        DB::commit();
+
         return response()->json([
-            'message' => 'Withdraw created successfully',
+            'message' => 'Withdraw successful',
             'withdraw' => $withdraw
         ]);
-    }
-    public function update(Request $request, $id)
-{
-    $withdraw = Withdraw::where('id', $id)
-                        ->where('user_id', $request->user()->id)
-                        ->first();
 
-    if (!$withdraw) {
-        return response()->json(['message' => 'Withdraw not found or not yours'], 404);
-    }
-
-    $request->validate([
-        'amount' => 'sometimes|required|numeric|min:1',
-        'description' => 'nullable|string',
-    ]);
-
-    $withdraw->update($request->only(['amount', 'description']));
-
-    return response()->json([
-        'message' => 'Withdraw updated successfully',
-        'withdraw' => $withdraw
-    ]);
-}
-
-    // DELETE /api/withdraws/{id}
-    public function destroy(Request $request, $id)
-    {
-        $withdraw = Withdraw::where('id', $id)
-                            ->where('user_id', $request->user()->id)
-                            ->first();
-
-        if (!$withdraw) {
-            return response()->json([
-                'message' => 'Withdraw not found or not yours'
-            ], 404);
-        }
-
-        $withdraw->delete();
+    } catch (\Exception $e) {
+        DB::rollBack();
 
         return response()->json([
-            'message' => 'Withdraw deleted successfully'
-        ]);
+            'message' => 'Withdraw failed',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }

@@ -4,149 +4,129 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // POST /api/register (registers as user by default)
+    /*
+    |--------------------------------------------------------------------------
+    | REGISTER
+    |--------------------------------------------------------------------------
+    */
     public function register(Request $request): JsonResponse
     {
         $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'phone'    => 'required|string|unique:users,phone',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|unique:users,phone',
             'password' => 'required|min:6|confirmed',
         ]);
 
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'phone'    => $request->phone,
+            'name' => $request->name,
+            'email' => strtolower($request->email),
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
-            'role'     => 'user', // always user on register
+            'role' => 'user',
         ]);
 
-        event(new Registered($user));
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // ✅ Send verification email automatically
+        $user->sendEmailVerificationNotification();
 
         return response()->json([
-            'status'  => 'success',
-            'message' => 'Account created successfully. Please check your email to verify your account.',
-            'user'    => $user,
-            'token'   => $token,
+            'status' => true,
+            'message' => 'Account created. Please verify your email.',
         ], 201);
     }
 
-    // POST /api/admin/register (registers as admin - use secret key)
-    public function registerAdmin(Request $request): JsonResponse
-    {
-        $request->validate([
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email',
-            'phone'        => 'required|string|unique:users,phone',
-            'password'     => 'required|min:6|confirmed',
-            'admin_secret' => 'required|string', // secret key to create admin
-        ]);
-
-        // Check admin secret key
-        if ($request->admin_secret !== config('app.admin_secret', 'umoja@admin2024')) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Invalid admin secret key',
-            ], 403);
-        }
-
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'phone'    => $request->phone,
-            'password' => Hash::make($request->password),
-            'role'     => 'admin',
-        ]);
-
-        event(new Registered($user));
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'Admin account created successfully.',
-            'user'    => $user,
-            'token'   => $token,
-        ], 201);
-    }
-
-    // POST /api/login (works for both admin and user)
+    /*
+    |--------------------------------------------------------------------------
+    | LOGIN
+    |--------------------------------------------------------------------------
+    */
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!Auth::attempt($request->only('email','password'))) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Invalid email or password',
+                'status' => false,
+                'message' => 'Invalid credentials'
             ], 401);
         }
 
-        // Check if email is verified
+        $user = Auth::user();
+
+        // 🔒 BLOCK UNVERIFIED USERS
         if (!$user->hasVerifiedEmail()) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Please verify your email before logging in.',
-                'action'  => 'resend_verification',
+                'status' => false,
+                'message' => 'Verify your email before login',
+                'action' => 'verify_email'
             ], 403);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'status'  => 'success',
+            'status' => true,
             'message' => 'Login successful',
-            'user'    => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role'  => $user->role,  // ← returns role so mobile app knows
-            ],
-            'token'   => $token,
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 
-    // POST /api/logout
+    /*
+    |--------------------------------------------------------------------------
+    | LOGOUT
+    |--------------------------------------------------------------------------
+    */
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
-            'status'  => 'success',
+            'status' => true,
             'message' => 'Logged out successfully',
         ]);
     }
 
-    // GET /api/me
+    /*
+    |--------------------------------------------------------------------------
+    | CURRENT USER
+    |--------------------------------------------------------------------------
+    */
     public function me(Request $request): JsonResponse
     {
         return response()->json([
-            'status' => 'success',
-            'data'   => [
-                'id'             => $request->user()->id,
-                'name'           => $request->user()->name,
-                'email'          => $request->user()->email,
-                'phone'          => $request->user()->phone,
-                'role'           => $request->user()->role,
-                'email_verified' => $request->user()->hasVerifiedEmail(),
-            ],
+            'status' => true,
+            'user' => $request->user(),
         ]);
     }
+    public function checkVerification(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email'
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'User not found'
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => true,
+        'verified' => !is_null($user->email_verified_at)
+    ]);
+}
 }

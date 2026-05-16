@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller; 
 use Illuminate\Http\Request;
 use App\Models\Deposit;
+use App\Models\Transaction;
+use App\Models\Notification;
+use Illuminate\Support\Facades\DB;
 
 class DepositController extends Controller
 {
@@ -17,64 +20,55 @@ class DepositController extends Controller
     }
 
     // POST /api/deposits
-    public function store(Request $request)
-    {
-        $request->validate([
-            'amount' => 'required|numeric|min:1',
-            'description' => 'nullable|string',
-        ]);
+   public function store(Request $request)
+{
+    $request->validate([
+        'amount' => 'required|numeric|min:1',
+        'description' => 'nullable|string',
+    ]);
 
+    $user = $request->user();
+
+    DB::beginTransaction();
+
+    try {
+
+        // 1. Save Deposit record
         $deposit = Deposit::create([
-            'user_id' => $request->user()->id,  // use logged-in user
+            'user_id' => $user->id,
             'amount' => $request->amount,
             'description' => $request->description ?? null,
         ]);
 
+        // 2. Save TRANSACTION (STATEMENTS SCREEN)
+        Transaction::create([
+            'user_id' => $user->id,
+            'type' => 'deposit',
+            'amount' => $request->amount,
+            'description' => $request->description ?? 'Deposit',
+        ]);
+
+        // 3. Save NOTIFICATION
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Deposit Successful',
+            'message' => 'UGX ' . number_format($request->amount) . ' has been added to your wallet.',
+        ]);
+
+        DB::commit();
+
         return response()->json([
-            'message' => 'Deposit created successfully',
+            'message' => 'Deposit successful',
             'deposit' => $deposit
         ]);
-    }
-    public function update(Request $request, $id)
-{
-    $deposit = Deposit::where('id', $id)
-                      ->where('user_id', $request->user()->id)
-                      ->first();
 
-    if (!$deposit) {
-        return response()->json(['message' => 'Deposit not found or not yours'], 404);
-    }
-
-    $request->validate([
-        'amount' => 'sometimes|required|numeric|min:1',
-        'description' => 'nullable|string',
-    ]);
-
-    $deposit->update($request->only(['amount', 'description']));
-
-    return response()->json([
-        'message' => 'Deposit updated successfully',
-        'deposit' => $deposit
-    ]);
-}
-
-    // DELETE /api/deposits/{id}
-    public function destroy(Request $request, $id)
-    {
-        $deposit = Deposit::where('id', $id)
-                          ->where('user_id', $request->user()->id)
-                          ->first();
-
-        if (!$deposit) {
-            return response()->json([
-                'message' => 'Deposit not found or not yours'
-            ], 404);
-        }
-
-        $deposit->delete();
+    } catch (\Exception $e) {
+        DB::rollBack();
 
         return response()->json([
-            'message' => 'Deposit deleted successfully'
-        ]);
+            'message' => 'Deposit failed',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }

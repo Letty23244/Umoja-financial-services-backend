@@ -19,14 +19,36 @@ use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\DashboardController;
 
 // ── Public routes ──────────────────────────────────────────
+/*
+|--------------------------------------------------------------------------
+| AUTH ROUTES
+|--------------------------------------------------------------------------
+*/
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/admin/register', [AuthController::class, 'registerAdmin']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/check-verification', [AuthController::class, 'checkVerification']);
+
+/*
+|--------------------------------------------------------------------------
+| PASSWORD RESET
+|--------------------------------------------------------------------------
+*/
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
-Route::post('/email/resend', [EmailVerificationController::class, 'resend']);
-Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
-    ->middleware(['signed'])->name('verification.verify');
+
+
+/*
+|--------------------------------------------------------------------------
+| PROTECTED USER ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile', [UserController::class, 'profile']);
+    Route::put('/profile', [UserController::class, 'updateProfile']);
+});
 
 // ── Protected routes ───────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -116,4 +138,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/deposits', fn() => \App\Models\Deposit::with('user')->get());
         Route::get('/admin/withdraws', fn() => \App\Models\Withdraw::with('user')->get());
     });
+    Route::get('/statements', [DashboardController::class, 'statements']);
 });
