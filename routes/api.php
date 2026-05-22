@@ -118,6 +118,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/payment-methods/{id}/set-default', [PaymentMethodController::class, 'setDefault']);
     Route::delete('/payment-methods/{id}', [PaymentMethodController::class, 'destroy']);
 
+     Route::post('/deposit', [PaymentController::class, 'deposit']);
+    Route::post('/withdraw', [PaymentController::class, 'withdraw']);
+    Route::get('/transactions', [PaymentController::class, 'transactions']);
+
+    Route::post('/payment/webhook', [PaymentWebhookController::class, 'handle']);
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
