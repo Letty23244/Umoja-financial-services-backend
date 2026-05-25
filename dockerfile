@@ -1,6 +1,6 @@
-FROM php:8.2-cli
+FROM php:8.2-fpm
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -11,20 +11,16 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /app
 
-# Copy project files
 COPY . .
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-# Generate Laravel key
-RUN php artisan key:generate
+# Fix permissions (IMPORTANT)
+RUN chmod -R 775 storage bootstrap/cache
 
-# Expose Render port
 EXPOSE 10000
 
-# Start Laravel server
 CMD php artisan serve --host=0.0.0.0 --port=10000
