@@ -1,12 +1,16 @@
 FROM php:8.2-fpm
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     curl \
-    libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql
+    zip \
+    libzip-dev \
+    libpq-dev
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_pgsql zip
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -15,10 +19,10 @@ WORKDIR /app
 
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install dependencies (safe mode)
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-# Fix permissions (IMPORTANT)
+# Fix permissions
 RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
