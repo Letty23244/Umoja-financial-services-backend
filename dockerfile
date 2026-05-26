@@ -15,16 +15,16 @@ RUN docker-php-ext-install pdo pdo_pgsql zip
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /app
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
+WORKDIR /app
 COPY . .
 
-# Install dependencies (safe mode)
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+# Install dependencies
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
 # Fix permissions
 RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
-
 CMD php artisan serve --host=0.0.0.0 --port=10000
