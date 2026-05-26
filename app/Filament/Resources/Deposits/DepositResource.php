@@ -17,8 +17,9 @@ use Filament\Tables\Table;
 class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+// Filament 3 syntax
+// Filament 5 syntax - won't work
+protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'Deposits';
 
