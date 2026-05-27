@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Resources\SavingTransactions\Tables;
+namespace App\Filament\Resources\SavingTransactions;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;

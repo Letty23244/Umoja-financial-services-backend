@@ -3,12 +3,11 @@
 namespace App\Filament\Resources\Deposits\Tables;
 
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn; 
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
 
 class DepositsTable
 {
@@ -44,12 +43,12 @@ class DepositsTable
                 //
             ])
             ->actions([
-                EditAction::make(),    // ✅ Edit button
-                DeleteAction::make(),  // ✅ Delete button
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(), // ✅ Bulk delete
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
