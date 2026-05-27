@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
@@ -21,7 +23,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'balance',
         'role',
-        
     ];
 
     protected $hidden = [
@@ -35,11 +36,25 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
         ];
     }
 
-    // ── Role helpers ───────────────────────────────────────────
+    /*
+    |--------------------------------------------------------------------------
+    | Filament Admin Access
+    |--------------------------------------------------------------------------
+    */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Role Helpers
+    |--------------------------------------------------------------------------
+    */
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
@@ -50,13 +65,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === 'user';
     }
 
-    // ── Filament admin panel access (admins only) ──────────────
-    public static function canAccessPanel(\Filament\Panel $panel): bool
-    {
-        return auth()->user()?->role === 'admin';
-    }
-
-    // ── Helpers ────────────────────────────────────────────────
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
     public function initials(): string
     {
         return Str::of($this->name)
@@ -66,7 +79,11 @@ class User extends Authenticatable implements MustVerifyEmail
             ->implode('');
     }
 
-    // ── Relationships ──────────────────────────────────────────
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
     public function deposits()
     {
         return $this->hasMany(Deposit::class);
