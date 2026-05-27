@@ -2,58 +2,46 @@
 
 namespace App\Filament\Resources\SavingTransactions;
 
+use App\Filament\Resources\SavingTransactions\Pages\CreateSavingTransaction;
+use App\Filament\Resources\SavingTransactions\Pages\EditSavingTransaction;
+use App\Filament\Resources\SavingTransactions\Pages\ListSavingTransactions;
+use App\Filament\Resources\SavingTransactions\Tables\SavingTransactionsTable;
+use App\Models\SavingTransaction;
+use BackedEnum;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\DeleteBulkAction;
 
-class SavingTransactionsTable
+class SavingTransactionResource extends Resource
 {
-    public static function configure(Table $table): Table
+    protected static ?string $model = SavingTransaction::class;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static ?string $recordTitleAttribute = 'Saving Transactions';
+
+    public static function form(Schema $schema): Schema
     {
-        return $table
-            ->columns([
-                TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable(),
+        return $schema;
+    }
 
-                TextColumn::make('user.name')
-                    ->label('User')
-                    ->sortable()
-                    ->searchable(),
+    public static function table(Table $table): Table
+    {
+        return SavingTransactionsTable::configure($table);
+    }
 
-                TextColumn::make('amount')
-                    ->label('Amount')
-                    ->money('UGX')
-                    ->sortable(),
+    public static function getRelations(): array
+    {
+        return [];
+    }
 
-                TextColumn::make('type')
-                    ->label('Type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'deposit'    => 'success',
-                        'withdrawal' => 'danger',
-                        default      => 'gray',
-                    }),
-
-                TextColumn::make('created_at')
-                    ->label('Date')
-                    ->dateTime()
-                    ->sortable(),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                EditAction::make(),    // ✅ Edit button
-                DeleteAction::make(),  // ✅ Delete button
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(), // ✅ Bulk delete
-                ]),
-            ]);
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListSavingTransactions::route('/'),
+            'create' => CreateSavingTransaction::route('/create'),
+            'edit' => EditSavingTransaction::route('/{record}/edit'),
+        ];
     }
 }
