@@ -10,15 +10,18 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // Admin user
-        User::create([
-            'name'              => 'Umoja Admin',
-            'email'             => 'akulluleticia23@gmail.com',
-            'phone'             => '0765451895',
-            'password'          => Hash::make('password123'),
-            'role'              => 'admin',
-            'email_verified_at' => now(), // pre-verified
-        ]);
+      User::updateOrCreate(
+    [
+        'email' => 'akulluleticia23@gmail.com'
+    ],
+    [
+        'name' => 'Umoja Admin',
+        'phone' => '0765451895',
+        'password' => bcrypt('password'),
+        'role' => 'admin',
+        'email_verified_at' => now(),
+    ]
+);
 
         // Regular user
         User::create([
