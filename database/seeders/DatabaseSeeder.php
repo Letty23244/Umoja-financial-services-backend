@@ -22,15 +22,17 @@ class DatabaseSeeder extends Seeder
         'email_verified_at' => now(),
     ]
 );
-
-        // Regular user
-        User::create([
-            'name'              => 'Leticia Nakamya',
-            'email'             => 'travisakullu@gmail.com',
-            'phone'             => '0700000002',
-            'password'          => Hash::make('password123'),
-            'role'              => 'user',
-            'email_verified_at' => now(), // pre-verified
-        ]);
+       User::updateOrCreate(
+    [
+        'email' => 'travisakullu@gmail.com'
+    ],
+    [
+        'name' => 'Leticia Nakamya',
+        'phone' => '0700000002',
+        'password' => bcrypt('password'),
+        'role' => 'user',
+        'email_verified_at' => now(),
+    ]
+);
     }
 }
