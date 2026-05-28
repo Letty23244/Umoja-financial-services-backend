@@ -7,7 +7,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     zip \
     libzip-dev \
-    libpq-dev
+    libpq-dev \
+    nodejs \
+    npm
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_pgsql zip
@@ -20,11 +22,20 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 WORKDIR /app
 COPY . .
 
-# Install dependencies
+# Install PHP dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
+
+# Install Node dependencies and build assets
+RUN npm install && npm run build
 
 # Fix permissions
 RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
-CMD php artisan migrate --force && php artisan filament:upgrade && php artisan config:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=10000
+CMD php artisan migrate --force && \
+    php artisan filament:upgrade && \
+    php artisan vendor:publish --tag=filament-assets --force && \
+    php artisan storage:link || true && \
+    php artisan config:cache && \
+    php artisan view:cache && \
+    php artisan serve --host=0.0.0.0 --port=10000
