@@ -29,12 +29,12 @@ class TransactionsTable
                     ->label('Type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'deposit'      => 'success',
-                        'withdrawal'   => 'danger',
-                        'saving'       => 'info',
-                        'locked_saving'=> 'warning',
-                        'auto_saving'  => 'primary',
-                        default        => 'gray',
+                        'deposit'       => 'success',
+                        'withdrawal'    => 'danger',
+                        'saving'        => 'info',
+                        'locked_saving' => 'warning',
+                        'auto_saving'   => 'primary',
+                        default         => 'gray',
                     }),
 
                 TextColumn::make('reference')
@@ -55,11 +55,11 @@ class TransactionsTable
             ->filters([
                 //
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
