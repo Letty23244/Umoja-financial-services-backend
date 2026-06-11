@@ -23,12 +23,11 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 WORKDIR /app
 COPY . .
 
-# 👇 Clear out old build caches to prevent local configurations from leaking into Docker
+# Clean out local configuration cache
 RUN rm -f bootstrap/cache/*.php
 
-# 👇 FIX: Pass a dummy APP_KEY and set env to testing so Filament boots safely without a DB during compilation
-RUN APP_ENV=testing APP_KEY=base64:base64_dummy_key_for_building_only_abc123= \
-    composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
+# 👇 FIX: Added --no-scripts to prevent Laravel from booting up during build time
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs --no-scripts
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
@@ -37,7 +36,10 @@ RUN npm install && npm run build
 RUN chmod -R 775 storage bootstrap/cache
 
 EXPOSE 10000
-CMD php artisan migrate --force && \
+
+# 👇 FIX: Added package:discover here so it runs safely when the container is live with its database variables
+CMD php artisan package:discover --ansi && \
+    php artisan migrate --force && \
     php artisan filament:upgrade && \
     php artisan vendor:publish --tag=filament-assets --force && \
     php artisan storage:link || true && \
