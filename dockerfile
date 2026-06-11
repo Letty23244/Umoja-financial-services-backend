@@ -43,6 +43,7 @@ CMD php artisan package:discover --ansi && \
     php artisan filament:upgrade && \
     php artisan vendor:publish --tag=filament-assets --force && \
     php artisan storage:link || true && \
+    php artisan config:clear && \
     php artisan config:cache && \
     php artisan view:cache && \
     php artisan serve --host=0.0.0.0 --port=10000
