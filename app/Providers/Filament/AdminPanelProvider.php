@@ -36,10 +36,9 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
 
-            ->brandLogo(asset('assets/logo.png'))
-           ->brandDarkLogo(asset('assets/logo-white.png')) 
+            ->brandLogo(fn () => asset('assets/logo.png'))
+            ->brandDarkLogo(fn () => asset('assets/logo-white.png')) 
             ->brandLogoHeight('2.5rem')
-
             
 
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')

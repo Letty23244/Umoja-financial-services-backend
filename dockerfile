@@ -23,8 +23,12 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 WORKDIR /app
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
+# 👇 Clear out old build caches to prevent local configurations from leaking into Docker
+RUN rm -f bootstrap/cache/*.php
+
+# 👇 FIX: Pass a dummy APP_KEY and set env to testing so Filament boots safely without a DB during compilation
+RUN APP_ENV=testing APP_KEY=base64:base64_dummy_key_for_building_only_abc123= \
+    composer install --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
 # Install Node dependencies and build assets
 RUN npm install && npm run build
