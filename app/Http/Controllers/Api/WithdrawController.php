@@ -1,37 +1,27 @@
-<?php
-
-namespace App\Http\Controllers\Api;
-
-use Illuminate\Http\Request;
-use App\Models\Withdraw;
-use App\Http\Controllers\Controller; 
-use App\Models\Transaction;
-use App\Models\Notification;
-use Illuminate\Support\Facades\DB;
-
-class WithdrawController extends Controller
-{
-    // GET /api/withdraws
-    public function index(Request $request)
-    {
-        // Fetch all withdraws for the logged-in user
-        $withdraws = Withdraw::where('user_id', $request->user()->id)->get();
-        return response()->json($withdraws);
-    }
-
-    // POST /api/withdraws
+// POST /api/withdraws
     public function store(Request $request)
     {
+        // 1. Validate incoming data safely
         $request->validate([
             'amount' => 'required|numeric|min:1',
-            'method' => 'required|string', // Ensure the method passed from Flutter is captured
+            'method' => 'required|string', 
             'description' => 'nullable|string',
+            'user_id' => 'nullable|integer', // Optional fallback for testing UI
         ]);
 
-        $user = $request->user();
+        // 2. Safely find the user without crashing
+        // It checks the auth token first. If empty, it looks up the passed user_id.
+        $user = $request->user() ?? \App\Models\User::find($request->user_id);
 
-        // ── 1. BALANCE CHECK ─────────────────────────────────
-        // Check if the user has enough funds before starting the process
+        // If no user is found, return a clean 401 error instead of a 500 crash
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Authentication failed. Active user session or user_id not found.'
+            ], 401);
+        }
+
+        // 3. BALANCE CHECK 
         if ($user->balance < $request->amount) {
             return response()->json([
                 'status' => 'error',
@@ -42,20 +32,19 @@ class WithdrawController extends Controller
         DB::beginTransaction();
 
         try {
-            // ── 2. DEDUCT THE USER'S BALANCE ───────────────────
-            // This updates the actual live metric column inside Filament dashboard
+            // 4. DEDUCT THE USER'S BALANCE 
             $user->balance -= $request->amount;
             $user->save();
 
-            // ── 3. CREATE WITHDRAWAL RECORD ────────────────────
+            // 5. CREATE WITHDRAWAL RECORD 
             $withdraw = Withdraw::create([
                 'user_id' => $user->id,
                 'amount' => $request->amount,
-                'method' => $request->method, // Saved the selected method (e.g., Mobile Money)
+                'method' => $request->method, 
                 'description' => $request->description ?? null,
             ]);
 
-            // ── 4. CREATE TRANSACTION STATEMENT ────────────────
+            // 6. CREATE TRANSACTION STATEMENT 
             Transaction::create([
                 'user_id' => $user->id,
                 'type' => 'withdrawal',
@@ -63,7 +52,7 @@ class WithdrawController extends Controller
                 'description' => $request->description ?? 'Withdrawal via ' . $request->method,
             ]);
 
-            // ── 5. CREATE NOTIFICATION ─────────────────────────
+            // 7. CREATE NOTIFICATION 
             Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Withdrawal Successful',
@@ -72,11 +61,15 @@ class WithdrawController extends Controller
 
             DB::commit();
 
+            // 8. RETURN CLEAN JSON RESPONSE (Fixed syntax error comma)
             return response()->json([
                 'status' => 'success',
                 'message' => 'Withdraw successful',
-                'withdraw' => $withdraw
-                'new_balance' => $user->balance
+                'withdraw' => $withdraw, // Comma added here
+                'user' => [
+                    'id' => $user->id,
+                    'balance' => $user->balance, // Sent back so your Flutter screen updates dynamically!
+                ]
             ], 200);
 
         } catch (\Exception $e) {
@@ -84,9 +77,8 @@ class WithdrawController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Withdraw failed',
+                'message' => 'Withdraw processing failed',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
-}

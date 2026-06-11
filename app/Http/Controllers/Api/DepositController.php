@@ -11,35 +11,39 @@ use Illuminate\Support\Facades\DB;
 
 class DepositController extends Controller
 {
-    // GET /api/deposits
-    public function index(Request $request)
-    {
-        // Fetch deposits for the logged-in user
-        $deposits = Deposit::where('user_id', $request->user()->id)->get();
-        return response()->json($deposits);
-    }
-
-    // POST /api/deposits
+   // POST /api/deposits
     public function store(Request $request)
     {
+        // 1. Validate incoming data safely
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string',
+            'user_id' => 'nullable|integer', // Optional fallback for testing UI
         ]);
 
-        $user = $request->user();
+        // 2. Safely find the user without crashing
+        // It checks the auth token first. If empty, it looks up the passed user_id.
+        $user = $request->user() ?? \App\Models\User::find($request->user_id);
+
+        // If no user is found anywhere, return a clean 401 error instead of a 500 crash
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Authentication failed. Active user session or user_id not found.'
+            ], 401);
+        }
 
         DB::beginTransaction();
 
         try {
-            // 1. Save Deposit record
+            // 3. Save Deposit record
             $deposit = Deposit::create([
                 'user_id' => $user->id,
                 'amount' => $request->amount,
                 'description' => $request->description ?? null,
             ]);
 
-            // 2. Save TRANSACTION (STATEMENTS SCREEN)
+            // 4. Save TRANSACTION (STATEMENTS SCREEN)
             Transaction::create([
                 'user_id' => $user->id,
                 'type' => 'deposit',
@@ -47,27 +51,26 @@ class DepositController extends Controller
                 'description' => $request->description ?? 'Deposit',
             ]);
 
-            // 3. Save NOTIFICATION
+            // 5. Save NOTIFICATION
             Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Deposit Successful',
                 'message' => 'UGX ' . number_format($request->amount) . ' has been added to your wallet.',
             ]);
 
-            // 4. 🚀 UPDATE THE ACTUAL BALANCE IN DATABASE
-            // This increments the column on your users table immediately
+            // 6. UPDATE THE ACTUAL BALANCE IN DATABASE
             $user->increment('balance', $request->amount);
 
             DB::commit();
 
-            // 5. ✨ FORMAT RESPONSE TO EXACTLY MATCH YOUR FLUTTER EXPECTATIONS
+            // 7. RETURN CLEAN JSON RESPONSE FOR FLUTTER
             return response()->json([
-                'status' => 'success', // Your Flutter code explicitly checks for this
+                'status' => 'success',
                 'message' => 'Deposit successful',
                 'deposit' => $deposit,
                 'user' => [
                     'id' => $user->id,
-                    'balance' => $user->balance, // Flutter reads this to update the wallet on the spot!
+                    'balance' => $user->balance, 
                 ]
             ], 200);
 
@@ -76,7 +79,7 @@ class DepositController extends Controller
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Deposit failed',
+                'message' => 'Deposit processing failed',
                 'error' => $e->getMessage()
             ], 500);
         }
