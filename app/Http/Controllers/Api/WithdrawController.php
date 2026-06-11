@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
@@ -21,55 +20,73 @@ class WithdrawController extends Controller
     }
 
     // POST /api/withdraws
-   public function store(Request $request)
-{
-    $request->validate([
-        'amount' => 'required|numeric|min:1',
-        'description' => 'nullable|string',
-    ]);
-
-    $user = $request->user();
-
-    DB::beginTransaction();
-
-    try {
-
-        // 1. Create withdraw record
-        $withdraw = Withdraw::create([
-            'user_id' => $user->id,
-            'amount' => $request->amount,
-            'description' => $request->description ?? null,
+    public function store(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'method' => 'required|string', // Ensure the method passed from Flutter is captured
+            'description' => 'nullable|string',
         ]);
 
-        // 2. Create STATEMENT (IMPORTANT)
-        Transaction::create([
-            'user_id' => $user->id,
-            'type' => 'withdrawal',
-            'amount' => $request->amount,
-            'description' => $request->description ?? 'Withdrawal',
-        ]);
+        $user = $request->user();
 
-        // 3. Create NOTIFICATION
-        Notification::create([
-            'user_id' => $user->id,
-            'title' => 'Withdrawal Successful',
-            'message' => 'UGX ' . number_format($request->amount) . ' has been withdrawn.',
-        ]);
+        // ── 1. BALANCE CHECK ─────────────────────────────────
+        // Check if the user has enough funds before starting the process
+        if ($user->balance < $request->amount) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Insufficient account balance for this withdrawal.'
+            ], 400); // 400 Bad Request
+        }
 
-        DB::commit();
+        DB::beginTransaction();
 
-        return response()->json([
-            'message' => 'Withdraw successful',
-            'withdraw' => $withdraw
-        ]);
+        try {
+            // ── 2. DEDUCT THE USER'S BALANCE ───────────────────
+            // This updates the actual live metric column inside Filament dashboard
+            $user->balance -= $request->amount;
+            $user->save();
 
-    } catch (\Exception $e) {
-        DB::rollBack();
+            // ── 3. CREATE WITHDRAWAL RECORD ────────────────────
+            $withdraw = Withdraw::create([
+                'user_id' => $user->id,
+                'amount' => $request->amount,
+                'method' => $request->method, // Saved the selected method (e.g., Mobile Money)
+                'description' => $request->description ?? null,
+            ]);
 
-        return response()->json([
-            'message' => 'Withdraw failed',
-            'error' => $e->getMessage()
-        ], 500);
+            // ── 4. CREATE TRANSACTION STATEMENT ────────────────
+            Transaction::create([
+                'user_id' => $user->id,
+                'type' => 'withdrawal',
+                'amount' => $request->amount,
+                'description' => $request->description ?? 'Withdrawal via ' . $request->method,
+            ]);
+
+            // ── 5. CREATE NOTIFICATION ─────────────────────────
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Withdrawal Successful',
+                'message' => 'UGX ' . number_format($request->amount) . ' has been withdrawn.',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Withdraw successful',
+                'withdraw' => $withdraw
+                'new_balance' => $user->balance
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Withdraw failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 }
