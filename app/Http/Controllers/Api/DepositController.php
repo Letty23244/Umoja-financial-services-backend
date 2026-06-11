@@ -20,55 +20,65 @@ class DepositController extends Controller
     }
 
     // POST /api/deposits
-   public function store(Request $request)
-{
-    $request->validate([
-        'amount' => 'required|numeric|min:1',
-        'description' => 'nullable|string',
-    ]);
-
-    $user = $request->user();
-
-    DB::beginTransaction();
-
-    try {
-
-        // 1. Save Deposit record
-        $deposit = Deposit::create([
-            'user_id' => $user->id,
-            'amount' => $request->amount,
-            'description' => $request->description ?? null,
+    public function store(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string',
         ]);
 
-        // 2. Save TRANSACTION (STATEMENTS SCREEN)
-        Transaction::create([
-            'user_id' => $user->id,
-            'type' => 'deposit',
-            'amount' => $request->amount,
-            'description' => $request->description ?? 'Deposit',
-        ]);
+        $user = $request->user();
 
-        // 3. Save NOTIFICATION
-        Notification::create([
-            'user_id' => $user->id,
-            'title' => 'Deposit Successful',
-            'message' => 'UGX ' . number_format($request->amount) . ' has been added to your wallet.',
-        ]);
+        DB::beginTransaction();
 
-        DB::commit();
+        try {
+            // 1. Save Deposit record
+            $deposit = Deposit::create([
+                'user_id' => $user->id,
+                'amount' => $request->amount,
+                'description' => $request->description ?? null,
+            ]);
 
-        return response()->json([
-            'message' => 'Deposit successful',
-            'deposit' => $deposit
-        ]);
+            // 2. Save TRANSACTION (STATEMENTS SCREEN)
+            Transaction::create([
+                'user_id' => $user->id,
+                'type' => 'deposit',
+                'amount' => $request->amount,
+                'description' => $request->description ?? 'Deposit',
+            ]);
 
-    } catch (\Exception $e) {
-        DB::rollBack();
+            // 3. Save NOTIFICATION
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Deposit Successful',
+                'message' => 'UGX ' . number_format($request->amount) . ' has been added to your wallet.',
+            ]);
 
-        return response()->json([
-            'message' => 'Deposit failed',
-            'error' => $e->getMessage()
-        ], 500);
+            // 4. 🚀 UPDATE THE ACTUAL BALANCE IN DATABASE
+            // This increments the column on your users table immediately
+            $user->increment('balance', $request->amount);
+
+            DB::commit();
+
+            // 5. ✨ FORMAT RESPONSE TO EXACTLY MATCH YOUR FLUTTER EXPECTATIONS
+            return response()->json([
+                'status' => 'success', // Your Flutter code explicitly checks for this
+                'message' => 'Deposit successful',
+                'deposit' => $deposit,
+                'user' => [
+                    'id' => $user->id,
+                    'balance' => $user->balance, // Flutter reads this to update the wallet on the spot!
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Deposit failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-}
 }
