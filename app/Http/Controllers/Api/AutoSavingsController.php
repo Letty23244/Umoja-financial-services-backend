@@ -27,18 +27,18 @@ class AutoSavingsController extends Controller
     // POST /api/auto-savings
     public function store(Request $request): JsonResponse
     {
+        // ✅ VALIDATION (FIXED)
         $request->validate([
             'saving_wallet_id'  => 'required|integer',
             'name'              => 'required|string|max:255',
             'amount'            => 'required|numeric|min:1',
             'frequency'         => 'required|in:daily,weekly,monthly',
             'payment_method'    => 'required|in:mobile_money,bank_transfer',
-            'payment_reference' => 'required|string',
         ]);
 
-        // Manually check wallet
-        $wallet = SavingWallet::where('user_id', Auth::id())
-            ->where('id', $request->saving_wallet_id)
+        // ✅ VERIFY WALLET BELONGS TO USER
+        $wallet = SavingWallet::where('id', $request->saving_wallet_id)
+            ->where('user_id', Auth::id())
             ->first();
 
         if (!$wallet) {
@@ -48,20 +48,27 @@ class AutoSavingsController extends Controller
             ], 404);
         }
 
+        // ✅ CREATE AUTO SAVING
         $autoSaving = AutoSavings::create([
             'user_id'             => Auth::id(),
             'saving_wallet_id'    => $wallet->id,
             'name'                => $request->name,
             'amount'              => $request->amount,
             'frequency'           => $request->frequency,
+
+            // ✅ AUTO CALCULATED NEXT DATE
             'next_deduction_date' => match ($request->frequency) {
                 'daily'   => now()->addDay()->toDateString(),
                 'weekly'  => now()->addWeek()->toDateString(),
                 'monthly' => now()->addMonth()->toDateString(),
             },
-            'payment_method'    => $request->payment_method,
-            'payment_reference' => $request->payment_reference,
-            'status'            => 'active',
+
+            'payment_method'      => $request->payment_method,
+
+            // ✅ GENERATED IN BACKEND (NO FLUTTER NEEDED)
+            'payment_reference'   => 'AUTO-' . now()->timestamp . rand(1000, 9999),
+
+            'status'              => 'active',
         ]);
 
         return response()->json([
@@ -74,7 +81,10 @@ class AutoSavingsController extends Controller
     // PUT /api/auto-savings/{id}/pause
     public function pause($id): JsonResponse
     {
-        $autoSaving = AutoSavings::where('user_id', Auth::id())->findOrFail($id);
+        $autoSaving = AutoSavings::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->firstOrFail();
+
         $autoSaving->update(['status' => 'paused']);
 
         return response()->json([
@@ -86,7 +96,10 @@ class AutoSavingsController extends Controller
     // PUT /api/auto-savings/{id}/resume
     public function resume($id): JsonResponse
     {
-        $autoSaving = AutoSavings::where('user_id', Auth::id())->findOrFail($id);
+        $autoSaving = AutoSavings::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->firstOrFail();
+
         $autoSaving->update(['status' => 'active']);
 
         return response()->json([
@@ -98,7 +111,10 @@ class AutoSavingsController extends Controller
     // DELETE /api/auto-savings/{id}
     public function destroy($id): JsonResponse
     {
-        $autoSaving = AutoSavings::where('user_id', Auth::id())->findOrFail($id);
+        $autoSaving = AutoSavings::where('user_id', Auth::id())
+            ->where('id', $id)
+            ->firstOrFail();
+
         $autoSaving->update(['status' => 'cancelled']);
 
         return response()->json([
