@@ -16,7 +16,7 @@ return new class extends Migration
     $table->foreignId('user_id')->constrained()->cascadeOnDelete();
     $table->string('title');
     $table->text('message');
-    $table->enum('type', ['loan_reminder', 'savings_update', 'repayment_due', 'general']);
+    $table->enum('type', ['savings_update', 'repayment_due', 'general']);
     $table->boolean('is_read')->default(false);
     $table->timestamp('read_at')->nullable();
     $table->json('data')->nullable();                // for deep linking
