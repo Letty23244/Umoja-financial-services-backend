@@ -1,5 +1,10 @@
 <?php
 
+// Force CORS headers on all API responses
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
@@ -17,6 +22,14 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\DashboardController;
+
+// Handle preflight OPTIONS requests
+Route::options('{any}', function() {
+    return response()->json([], 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+})->where('any', '.*');
 
 // ── Public routes ──────────────────────────────────────────
 /*
@@ -118,7 +131,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/payment-methods/{id}/set-default', [PaymentMethodController::class, 'setDefault']);
     Route::delete('/payment-methods/{id}', [PaymentMethodController::class, 'destroy']);
 
-     Route::post('/deposit', [PaymentController::class, 'deposit']);
+    Route::post('/deposit', [PaymentController::class, 'deposit']);
     Route::post('/withdraw', [PaymentController::class, 'withdraw']);
     Route::get('/transactions', [PaymentController::class, 'transactions']);
 
@@ -144,5 +157,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/deposits', fn() => \App\Models\Deposit::with('user')->get());
         Route::get('/admin/withdraws', fn() => \App\Models\Withdraw::with('user')->get());
     });
+
     Route::get('/statements', [DashboardController::class, 'statements']);
 });
