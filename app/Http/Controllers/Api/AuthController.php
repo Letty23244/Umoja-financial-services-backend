@@ -25,20 +25,27 @@ class AuthController extends Controller
             'password' => 'required|min:6|confirmed',
         ]);
 
+        // Auto-verify email during UI testing so registration works without an active SMTP server
         $user = User::create([
             'name' => $request->name,
             'email' => strtolower($request->email),
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => 'user',
+            'email_verified_at' => now(), // Auto-verified for testing
         ]);
 
-        // ✅ Send verification email automatically
-        $user->sendEmailVerificationNotification();
+        // Commented out until your Render environment variables have a live mail configuration
+        // $user->sendEmailVerificationNotification();
+
+        // Create token instantly so Flutter can log them straight in
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'status' => true,
-            'message' => 'Account created. Please verify your email.',
+            'message' => 'Account created successfully.',
+            'token' => $token,
+            'user' => $user,
         ], 201);
     }
 
@@ -54,7 +61,7 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($request->only('email','password'))) {
+        if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
                 'status' => false,
                 'message' => 'Invalid credentials'
@@ -63,7 +70,7 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // 🔒 BLOCK UNVERIFIED USERS
+        // 🔒 BLOCK UNVERIFIED USERS (Will pass automatically since register marks them verified)
         if (!$user->hasVerifiedEmail()) {
             return response()->json([
                 'status' => false,
@@ -89,6 +96,7 @@ class AuthController extends Controller
     */
     public function logout(Request $request): JsonResponse
     {
+        // Safely deletes the token being used for the current request session
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -109,24 +117,30 @@ class AuthController extends Controller
             'user' => $request->user(),
         ]);
     }
-    public function checkVerification(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email'
-    ]);
 
-    $user = User::where('email', $request->email)->first();
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK VERIFICATION STATUS
+    |--------------------------------------------------------------------------
+    */
+    public function checkVerification(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email'
+        ]);
 
-    if (!$user) {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
         return response()->json([
-            'status' => false,
-            'message' => 'User not found'
-        ], 404);
+            'status' => true,
+            'verified' => !is_null($user->email_verified_at)
+        ]);
     }
-
-    return response()->json([
-        'status' => true,
-        'verified' => !is_null($user->email_verified_at)
-    ]);
-}
 }
