@@ -27,48 +27,34 @@ class AutoSavingsController extends Controller
     // POST /api/auto-savings
     public function store(Request $request): JsonResponse
     {
-        // ✅ VALIDATION (FIXED)
         $request->validate([
-            'saving_wallet_id'  => 'required|integer',
-            'name'              => 'required|string|max:255',
-            'amount'            => 'required|numeric|min:1',
-            'frequency'         => 'required|in:daily,weekly,monthly',
-            'payment_method'    => 'required|in:mobile_money,bank_transfer',
+            'name'           => 'required|string|max:255',
+            'amount'         => 'required|numeric|min:1',
+            'frequency'      => 'required|in:daily,weekly,monthly',
+            'payment_method' => 'required|in:mobile_money,bank_transfer',
         ]);
 
-        // ✅ VERIFY WALLET BELONGS TO USER
-        $wallet = SavingWallet::where('id', $request->saving_wallet_id)
-            ->where('user_id', Auth::id())
-            ->first();
+        // FIX: was requiring saving_wallet_id from Flutter (which sent 0)
+        // Now we auto-get or create the wallet for this user
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
-        if (!$wallet) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Wallet not found',
-            ], 404);
-        }
-
-        // ✅ CREATE AUTO SAVING
         $autoSaving = AutoSavings::create([
             'user_id'             => Auth::id(),
             'saving_wallet_id'    => $wallet->id,
             'name'                => $request->name,
             'amount'              => $request->amount,
             'frequency'           => $request->frequency,
-
-            // ✅ AUTO CALCULATED NEXT DATE
             'next_deduction_date' => match ($request->frequency) {
                 'daily'   => now()->addDay()->toDateString(),
                 'weekly'  => now()->addWeek()->toDateString(),
                 'monthly' => now()->addMonth()->toDateString(),
             },
-
-            'payment_method'      => $request->payment_method,
-
-            // ✅ GENERATED IN BACKEND (NO FLUTTER NEEDED)
-            'payment_reference'   => 'AUTO-' . now()->timestamp . rand(1000, 9999),
-
-            'status'              => 'active',
+            'payment_method'    => $request->payment_method,
+            'payment_reference' => 'AUTO-' . now()->timestamp . rand(1000, 9999),
+            'status'            => 'active',
         ]);
 
         return response()->json([
