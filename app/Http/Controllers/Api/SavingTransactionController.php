@@ -9,83 +9,102 @@ use App\Models\SavingTransaction;
 
 class SavingTransactionController extends Controller
 {
-    // Get transaction history
+    // ─────────────────────────────────────────────
+    // GET TRANSACTION HISTORY
+    // ─────────────────────────────────────────────
     public function index(Request $request)
     {
-        $wallet = SavingWallet::where('user_id', $request->user()->id)->first();
+        // FIX: was ->first() which returned 404 for new users with no wallet yet
+        // firstOrCreate auto-creates the wallet so the response is always 200
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => $request->user()->id],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
-        if (!$wallet) {
-            return response()->json(['message' => 'Wallet not found'], 404);
-        }
+        $transactions = $wallet->transactions()
+            ->latest()
+            ->take(20)
+            ->get();
 
-        return response()->json($wallet->transactions);
+        // FIX: wrap in 'transactions' key so Flutter AccountProvider can parse it
+        return response()->json([
+            'status'       => 'success',
+            'transactions' => $transactions,
+        ]);
     }
 
-    // Deposit
+    // ─────────────────────────────────────────────
+    // DEPOSIT
+    // ─────────────────────────────────────────────
     public function deposit(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:1'
         ]);
 
-        $wallet = SavingWallet::where('user_id', $request->user()->id)->first();
+        // FIX: was ->first() — use firstOrCreate so wallet is never missing
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => $request->user()->id],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
-        if (!$wallet) {
-            return response()->json(['message' => 'Wallet not found'], 404);
-        }
-
-        // Increase balance
         $wallet->balance += $request->amount;
         $wallet->save();
 
-        // Record transaction
         $transaction = SavingTransaction::create([
             'saving_wallet_id' => $wallet->id,
-            'type' => 'deposit',
-            'amount' => $request->amount,
-            'reference' => uniqid('DEP-')
+            'type'             => 'deposit',
+            'amount'           => $request->amount,
+            'reference'        => uniqid('DEP-'),
+            'description'      => $request->description ?? 'Wallet deposit',
         ]);
 
         return response()->json([
-            'message' => 'Deposit successful',
-            'balance' => $wallet->balance,
-            'transaction' => $transaction
+            'status'      => 'success',
+            'message'     => 'Deposit successful',
+            'new_balance' => $wallet->balance,
+            'transaction' => $transaction,
         ]);
     }
 
-    // Withdraw
+    // ─────────────────────────────────────────────
+    // WITHDRAW
+    // ─────────────────────────────────────────────
     public function withdraw(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:1'
         ]);
 
-        $wallet = SavingWallet::where('user_id', $request->user()->id)->first();
-
-        if (!$wallet) {
-            return response()->json(['message' => 'Wallet not found'], 404);
-        }
+        // FIX: was ->first() — use firstOrCreate so wallet is never missing
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => $request->user()->id],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
         if ($wallet->balance < $request->amount) {
-            return response()->json(['message' => 'Insufficient balance'], 400);
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Insufficient balance',
+            ], 400);
         }
 
-        // Reduce balance
         $wallet->balance -= $request->amount;
         $wallet->save();
 
-        // Record transaction
         $transaction = SavingTransaction::create([
             'saving_wallet_id' => $wallet->id,
-            'type' => 'withdraw',
-            'amount' => $request->amount,
-            'reference' => uniqid('WTH-')
+            'type'             => 'withdrawal',
+            'amount'           => $request->amount,
+            'reference'        => uniqid('WTH-'),
+            'description'      => $request->description ?? 'Wallet withdrawal',
         ]);
 
         return response()->json([
-            'message' => 'Withdrawal successful',
-            'balance' => $wallet->balance,
-            'transaction' => $transaction
+            'status'      => 'success',
+            'message'     => 'Withdrawal successful',
+            'new_balance' => $wallet->balance,
+            'transaction' => $transaction,
         ]);
     }
 }
