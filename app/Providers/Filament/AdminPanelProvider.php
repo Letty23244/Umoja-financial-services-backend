@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ])
 
             ->brandLogo(fn () => asset('assets/logo.png'))
-            ->brandDarkLogo(fn () => asset('assets/logo-white.png')) 
+        
             ->brandLogoHeight('2.5rem')
             
 
