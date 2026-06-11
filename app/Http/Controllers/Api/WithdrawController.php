@@ -57,6 +57,7 @@
                 'user_id' => $user->id,
                 'title' => 'Withdrawal Successful',
                 'message' => 'UGX ' . number_format($request->amount) . ' has been withdrawn.',
+                 'type' => 'withdrawal',
             ]);
 
             DB::commit();
