@@ -11,17 +11,18 @@ use Illuminate\Support\Facades\Auth;
 
 class SavingWalletController extends Controller
 {
-    // GET /api/wallet
+    // ─────────────────────────────────────────────
+    // GET OR AUTO-CREATE WALLET
+    // ─────────────────────────────────────────────
     public function index(): JsonResponse
     {
-        $wallet = SavingWallet::where('user_id', Auth::id())->first();
-
-        if (!$wallet) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'No wallet found. Please create one.',
-            ], 404);
-        }
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            [
+                'name' => 'My Savings Wallet',
+                'balance' => 0
+            ]
+        );
 
         return response()->json([
             'status' => 'success',
@@ -29,15 +30,18 @@ class SavingWalletController extends Controller
         ]);
     }
 
-    // POST /api/wallet/create
+    // ─────────────────────────────────────────────
+    // CREATE WALLET (optional manual endpoint)
+    // ─────────────────────────────────────────────
     public function store(Request $request): JsonResponse
     {
-        $existing = SavingWallet::where('user_id', Auth::id())->exists();
+        $existing = SavingWallet::where('user_id', Auth::id())->first();
 
         if ($existing) {
             return response()->json([
                 'status'  => 'error',
                 'message' => 'You already have a savings wallet',
+                'data'    => $existing
             ], 422);
         }
 
@@ -58,7 +62,9 @@ class SavingWalletController extends Controller
         ], 201);
     }
 
-    // POST /api/wallet/deposit
+    // ─────────────────────────────────────────────
+    // DEPOSIT (SAFE)
+    // ─────────────────────────────────────────────
     public function deposit(Request $request): JsonResponse
     {
         $request->validate([
@@ -66,12 +72,15 @@ class SavingWalletController extends Controller
             'description' => 'nullable|string|max:255',
         ]);
 
-        $wallet = SavingWallet::where('user_id', Auth::id())->firstOrFail();
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
         $wallet->increment('balance', $request->amount);
 
         SavingTransaction::create([
-            'saving_wallet_id' => $wallet->id,  // ← no 's'
+            'saving_wallet_id' => $wallet->id,
             'amount'           => $request->amount,
             'type'             => 'deposit',
             'description'      => $request->description ?? 'Wallet deposit',
@@ -84,15 +93,20 @@ class SavingWalletController extends Controller
         ]);
     }
 
-    // POST /api/wallet/withdraw
+    // ─────────────────────────────────────────────
+    // WITHDRAW (SAFE)
+    // ─────────────────────────────────────────────
     public function withdraw(Request $request): JsonResponse
     {
-        $wallet = SavingWallet::where('user_id', Auth::id())->firstOrFail();
-
         $request->validate([
-            'amount'      => 'required|numeric|min:1|max:' . $wallet->balance,
+            'amount'      => 'required|numeric|min:1',
             'description' => 'nullable|string|max:255',
         ]);
+
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
 
         if ($wallet->balance < $request->amount) {
             return response()->json([
@@ -104,7 +118,7 @@ class SavingWalletController extends Controller
         $wallet->decrement('balance', $request->amount);
 
         SavingTransaction::create([
-            'saving_wallet_id' => $wallet->id,  // ← no 's'
+            'saving_wallet_id' => $wallet->id,
             'amount'           => $request->amount,
             'type'             => 'withdrawal',
             'description'      => $request->description ?? 'Wallet withdrawal',
