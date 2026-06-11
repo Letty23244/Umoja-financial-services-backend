@@ -11,7 +11,6 @@ class LockedSavings extends Model
 
     protected $fillable = [
         'user_id',
-        'saving_wallet_id',
         'name',
         'amount',
         'interest_rate',
@@ -31,11 +30,6 @@ class LockedSavings extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function savingWallet()
-    {
-        return $this->belongsTo(SavingWallet::class);
     }
 
     // Check if savings has matured

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LockedSavings;
-use App\Models\SavingWallet;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -24,12 +23,13 @@ class LockedSavingsController extends Controller
                     'name'                => $saving->name,
                     'amount'              => $saving->amount,
                     'interest_rate'       => $saving->interest_rate,
-                    'lock_duration_years' => $saving->lock_duration_years,
-                    'locked_until'        => $saving->locked_until?->format('Y-m-d'),
+                    'duration_months'     => $saving->lock_duration_years * 12,
+                    'maturity_date'       => $saving->locked_until?->format('d M Y'),
                     'status'              => $saving->status,
                     'has_matured'         => $saving->hasMatured(),
                     'interest_earned'     => $saving->interest_earned,
                     'maturity_amount'     => $saving->maturity_amount,
+                    'created_at'          => (string) $saving->created_at,
                 ];
             });
 
@@ -43,41 +43,19 @@ class LockedSavingsController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'name'             => 'required|string|max:255',
-            'amount'           => 'required|numeric|min:1000',
-            // FIX: accept duration_months from Flutter OR lock_duration_years
-            'duration_months'  => 'nullable|integer|min:1',
-            'lock_duration_years' => 'nullable|integer|min:1|max:5',
+            'name'            => 'required|string|max:255',
+            'amount'          => 'required|numeric|min:1000',
+            'duration_months' => 'required|integer|min:1',
         ]);
 
-        // FIX: was requiring saving_wallet_id from Flutter (which sent 0)
-        // Now auto-get or create the wallet for this user
-        $wallet = SavingWallet::firstOrCreate(
-            ['user_id' => Auth::id()],
-            ['name' => 'My Savings Wallet', 'balance' => 0]
-        );
-
-        if ($wallet->balance < $request->amount) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Insufficient wallet balance',
-            ], 422);
-        }
-
-        // FIX: Flutter sends duration_months, convert to years for storage
-        $durationMonths = $request->duration_months
-            ?? ($request->lock_duration_years * 12)
-            ?? 12;
-        $durationYears = max(1, (int) ceil($durationMonths / 12));
+        $durationMonths = (int) $request->duration_months;
+        $durationYears  = max(1, (int) ceil($durationMonths / 12));
 
         try {
             DB::beginTransaction();
 
-            $wallet->decrement('balance', $request->amount);
-
             $lockedSaving = LockedSavings::create([
                 'user_id'             => Auth::id(),
-                'saving_wallet_id'    => $wallet->id,
                 'name'                => $request->name,
                 'amount'              => $request->amount,
                 'interest_rate'       => 5.00,
@@ -95,9 +73,8 @@ class LockedSavingsController extends Controller
                     'id'              => $lockedSaving->id,
                     'name'            => $lockedSaving->name,
                     'amount'          => $lockedSaving->amount,
-                    'locked_until'    => $lockedSaving->locked_until?->format('d M Y'),
+                    'maturity_date'   => $lockedSaving->locked_until?->format('d M Y'),
                     'maturity_amount' => $lockedSaving->maturity_amount,
-                    'new_balance'     => $wallet->fresh()->balance,
                 ],
             ], 201);
 
@@ -123,7 +100,7 @@ class LockedSavingsController extends Controller
                 'name'            => $saving->name,
                 'amount'          => $saving->amount,
                 'interest_rate'   => $saving->interest_rate,
-                'locked_until'    => $saving->locked_until?->format('Y-m-d'),
+                'maturity_date'   => $saving->locked_until?->format('d M Y'),
                 'has_matured'     => $saving->hasMatured(),
                 'interest_earned' => $saving->interest_earned,
                 'maturity_amount' => $saving->maturity_amount,
@@ -141,18 +118,10 @@ class LockedSavingsController extends Controller
         if (!$saving->hasMatured()) {
             return response()->json([
                 'status'       => 'error',
-                'message'      => 'Savings not yet matured',
+                'message'      => 'Savings not yet matured. Locked until ' . $saving->locked_until?->format('d M Y'),
                 'locked_until' => $saving->locked_until?->format('d M Y'),
             ], 422);
         }
-
-        // FIX: was ->first() which could return null — use firstOrCreate
-        $wallet = SavingWallet::firstOrCreate(
-            ['user_id' => Auth::id()],
-            ['name' => 'My Savings Wallet', 'balance' => 0]
-        );
-
-        $wallet->increment('balance', $saving->maturity_amount);
 
         $saving->update([
             'status'       => 'withdrawn',
@@ -163,7 +132,6 @@ class LockedSavingsController extends Controller
             'status'          => 'success',
             'message'         => 'Locked savings withdrawn successfully',
             'amount_received' => $saving->maturity_amount,
-            'new_balance'     => $wallet->fresh()->balance,
         ]);
     }
 }
