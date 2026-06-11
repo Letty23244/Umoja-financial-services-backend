@@ -56,6 +56,7 @@ class DepositController extends Controller
                 'user_id' => $user->id,
                 'title' => 'Deposit Successful',
                 'message' => 'UGX ' . number_format($request->amount) . ' has been added to your wallet.',
+                 'type' => 'deposit',
             ]);
 
             // 6. UPDATE THE ACTUAL BALANCE IN DATABASE
