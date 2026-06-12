@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\TransactionController; // ← ADDED
 use App\Http\Controllers\Api\UserController;         // ← ADDED (was used but never imported)
+use Illuminate\Support\Facades\DB;
 
 // ── CORS: preflight OPTIONS ────────────────────────────────
 Route::options('{any}', function () {
@@ -151,4 +152,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/withdraws',    fn() => \App\Models\Withdraw::with('user')->latest()->get());
         Route::get('/admin/transactions', [TransactionController::class, 'adminIndex']); // ← ADDED: admin sees all users
     });
+});
+Route::get('/debug-locked-savings-schema', function () {
+    $columns = DB::select("
+        SELECT column_name, data_type, is_nullable, column_default
+        FROM information_schema.columns
+        WHERE table_name = 'locked_savings'
+        ORDER BY ordinal_position
+    ");
+    
+    $migrations = DB::select("
+        SELECT migration, batch 
+        FROM migrations 
+        WHERE migration LIKE '%locked%'
+    ");
+    
+    return response()->json([
+        'columns'    => $columns,
+        'migrations' => $migrations,
+    ]);
 });
