@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LockedSavings;
+use App\Models\SavingWallet;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,26 +19,21 @@ class LockedSavingsController extends Controller
         $savings = LockedSavings::where('user_id', Auth::id())
             ->latest()
             ->get()
-            ->map(function ($saving) {
-                return [
-                    'id'                  => $saving->id,
-                    'name'                => $saving->name,
-                    'amount'              => $saving->amount,
-                    'interest_rate'       => $saving->interest_rate,
-                    'duration_months'     => $saving->lock_duration_years * 12,
-                    'maturity_date'       => $saving->locked_until?->format('d M Y'),
-                    'status'              => $saving->status,
-                    'has_matured'         => $saving->hasMatured(),
-                    'interest_earned'     => $saving->interest_earned,
-                    'maturity_amount'     => $saving->maturity_amount,
-                    'created_at'          => (string) $saving->created_at,
-                ];
-            });
+            ->map(fn($s) => [
+                'id'              => $s->id,
+                'name'            => $s->name,
+                'amount'          => $s->amount,
+                'interest_rate'   => $s->interest_rate,
+                'duration_months' => $s->lock_duration_years * 12,
+                'maturity_date'   => $s->locked_until?->format('d M Y'),
+                'status'          => $s->status,
+                'has_matured'     => $s->hasMatured(),
+                'interest_earned' => $s->interest_earned,
+                'maturity_amount' => $s->maturity_amount,
+                'created_at'      => (string) $s->created_at,
+            ]);
 
-        return response()->json([
-            'status' => 'success',
-            'data'   => $savings,
-        ]);
+        return response()->json(['status' => 'success', 'data' => $savings]);
     }
 
     // POST /api/locked-savings
@@ -51,11 +48,18 @@ class LockedSavingsController extends Controller
         $durationMonths = (int) $request->duration_months;
         $durationYears  = max(1, (int) ceil($durationMonths / 12));
 
+        // Same pattern as AutoSavingsController — auto-get or create wallet
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
+
         try {
             DB::beginTransaction();
 
             $lockedSaving = LockedSavings::create([
                 'user_id'             => Auth::id(),
+                'saving_wallet_id'    => $wallet->id,  // ← same fix as AutoSavings
                 'name'                => $request->name,
                 'amount'              => $request->amount,
                 'interest_rate'       => 5.00,
@@ -63,6 +67,13 @@ class LockedSavingsController extends Controller
                 'locked_until'        => now()->addMonths($durationMonths),
                 'status'              => 'active',
             ]);
+
+            UserNotification::notify(
+                Auth::id(),
+                '🔒 Savings Locked',
+                'UGX ' . number_format($request->amount) . ' locked in "' . $request->name . '" for ' . $durationMonths . ' month(s). Matures on ' . $lockedSaving->locked_until->format('d M Y') . '.',
+                'locked_savings'
+            );
 
             DB::commit();
 
@@ -90,8 +101,7 @@ class LockedSavingsController extends Controller
     // GET /api/locked-savings/{id}
     public function show($id): JsonResponse
     {
-        $saving = LockedSavings::where('user_id', Auth::id())
-            ->findOrFail($id);
+        $saving = LockedSavings::where('user_id', Auth::id())->findOrFail($id);
 
         return response()->json([
             'status' => 'success',
@@ -123,14 +133,18 @@ class LockedSavingsController extends Controller
             ], 422);
         }
 
-        $saving->update([
-            'status'       => 'withdrawn',
-            'withdrawn_at' => now(),
-        ]);
+        $saving->update(['status' => 'withdrawn', 'withdrawn_at' => now()]);
+
+        UserNotification::notify(
+            Auth::id(),
+            '🔓 Locked Savings Withdrawn',
+            'UGX ' . number_format($saving->maturity_amount) . ' (including interest) withdrawn from "' . $saving->name . '".',
+            'locked_savings'
+        );
 
         return response()->json([
             'status'          => 'success',
-            'message'         => 'Locked savings withdrawn successfully',
+            'message'         => 'Withdrawn successfully',
             'amount_received' => $saving->maturity_amount,
         ]);
     }

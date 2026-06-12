@@ -11,6 +11,7 @@ class LockedSavings extends Model
 
     protected $fillable = [
         'user_id',
+        'saving_wallet_id',  // ← back in, same as AutoSavings
         'name',
         'amount',
         'interest_rate',
@@ -32,20 +33,21 @@ class LockedSavings extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Check if savings has matured
+    public function savingWallet()
+    {
+        return $this->belongsTo(SavingWallet::class);
+    }
+
     public function hasMatured(): bool
     {
         return now()->greaterThanOrEqualTo($this->locked_until);
     }
 
-    // Calculate interest earned
     public function getInterestEarnedAttribute(): float
     {
-        $years = $this->lock_duration_years;
-        return $this->amount * ($this->interest_rate / 100) * $years;
+        return $this->amount * ($this->interest_rate / 100) * $this->lock_duration_years;
     }
 
-    // Total amount on maturity
     public function getMaturityAmountAttribute(): float
     {
         return $this->amount + $this->interest_earned;
