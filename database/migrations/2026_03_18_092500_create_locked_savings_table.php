@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('locked_savings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-          
+            $table->foreignId('saving_wallet_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->decimal('amount', 15, 2);
             $table->decimal('interest_rate', 5, 2)->default(5.00);
@@ -21,18 +21,10 @@ return new class extends Migration
             $table->timestamp('withdrawn_at')->nullable();
             $table->timestamps();
         });
-        Schema::table('locked_savings', function (Blueprint $table) {
-            $table->dropColumn('saving_wallet_id');
-        });
     }
 
-    
     public function down(): void
     {
-        Schema::table('locked_savings', function (Blueprint $table) {
-            $table->unsignedBigInteger('saving_wallet_id')->default(0)->after('user_id');
-        });
+        Schema::dropIfExists('locked_savings');
     }
-
-    
 };

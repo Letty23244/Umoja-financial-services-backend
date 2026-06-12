@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LockedSavings;
+use App\Models\SavingWallet;
 use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -57,11 +58,17 @@ class LockedSavingsController extends Controller
         $durationMonths = (int) $request->duration_months;
         $durationYears  = max(1, (int) ceil($durationMonths / 12));
 
+        $wallet = SavingWallet::firstOrCreate(
+            ['user_id' => Auth::id()],
+            ['name' => 'My Savings Wallet', 'balance' => 0]
+        );
+
         try {
             DB::beginTransaction();
 
             $lockedSaving = LockedSavings::create([
                 'user_id'             => Auth::id(),
+                'saving_wallet_id'    => $wallet->id,
                 'name'                => $request->name,
                 'amount'              => $request->amount,
                 'interest_rate'       => 5.00,
