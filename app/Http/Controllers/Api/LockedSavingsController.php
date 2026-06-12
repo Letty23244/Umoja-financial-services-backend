@@ -94,6 +94,8 @@ class LockedSavingsController extends Controller
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
             ], 500);
         }
     }
