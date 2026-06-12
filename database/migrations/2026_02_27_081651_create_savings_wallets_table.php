@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('savings_wallets', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->decimal('balance', 12, 2)->default(0);
-            $table->string('status')->default('active');
-            $table->timestamps();
+        Schema::table('locked_savings', function (Blueprint $table) {
+            $table->unsignedBigInteger('saving_wallet_id')
+                  ->nullable()
+                  ->change();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('savings_wallets');
+        Schema::table('locked_savings', function (Blueprint $table) {
+            $table->unsignedBigInteger('saving_wallet_id')
+                  ->nullable(false)
+                  ->change();
+        });
     }
 };
