@@ -19,8 +19,8 @@ use App\Http\Controllers\Api\PaymentMethodController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\SupportTicketController;
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\TransactionController; // ← ADDED
-use App\Http\Controllers\Api\UserController;         // ← ADDED (was used but never imported)
+use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\DB;
 
 // ── CORS: preflight OPTIONS ────────────────────────────────
@@ -47,6 +47,10 @@ Route::post('/check-verification',  [AuthController::class, 'checkVerification']
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword']);
 
+// ── Email Verification (PUBLIC - user is not logged in yet) ───────────
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify']);
+Route::post('/email/resend',            [EmailVerificationController::class, 'resend']);
+
 /*
 |--------------------------------------------------------------------------
 | PROTECTED ROUTES
@@ -55,12 +59,11 @@ Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword'
 Route::middleware('auth:sanctum')->group(function () {
 
     // ── Auth ───────────────────────────────────────────────
-    Route::post('/logout',       [AuthController::class, 'logout']);
-    Route::get('/me',            [AuthController::class, 'me']);
-    Route::get('/email/status',  [EmailVerificationController::class, 'status']);
+    Route::post('/logout',      [AuthController::class, 'logout']);
+    Route::get('/me',           [AuthController::class, 'me']);
+    Route::get('/email/status', [EmailVerificationController::class, 'status']);
 
     // ── Profile ────────────────────────────────────────────
-    // FIX: was declared in a separate duplicate middleware group — merged here
     Route::get('/profile', [UserController::class, 'profile']);
     Route::put('/profile', [UserController::class, 'updateProfile']);
 
@@ -68,8 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard',  [DashboardController::class, 'index']);
     Route::get('/statements', [DashboardController::class, 'statements']);
 
-    // ── Transactions (unified deposits + withdrawals) ──────
-    // FIX: was pointing to PaymentController which does not exist → replaced with TransactionController
+    // ── Transactions ───────────────────────────────────────
     Route::get('/transactions', [TransactionController::class, 'index']);
 
     // ── Deposits ───────────────────────────────────────────
@@ -86,13 +88,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Savings Wallet ─────────────────────────────────────
     Route::prefix('wallet')->group(function () {
-        Route::get('/',        [SavingWalletController::class, 'index']);
-        Route::post('/create', [SavingWalletController::class, 'store']);
-        Route::post('/deposit',  [SavingWalletController::class, 'deposit']);
-        Route::post('/withdraw', [SavingWalletController::class, 'withdraw']);
+        Route::get('/',               [SavingWalletController::class, 'index']);
+        Route::post('/create',        [SavingWalletController::class, 'store']);
+        Route::post('/deposit',       [SavingWalletController::class, 'deposit']);
+        Route::post('/withdraw',      [SavingWalletController::class, 'withdraw']);
 
-        // Saving wallet transaction history (separate from main transactions)
-        Route::get('/transactions',          [SavingTransactionController::class, 'index']);
+        Route::get('/transactions',           [SavingTransactionController::class, 'index']);
         Route::post('/transactions/deposit',  [SavingTransactionController::class, 'deposit']);
         Route::post('/transactions/withdraw', [SavingTransactionController::class, 'withdraw']);
     });
@@ -105,54 +106,56 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/savings-goals/{id}', [SavingsGoalController::class, 'destroy']);
 
     // ── Locked Savings ─────────────────────────────────────
-    Route::get('/locked-savings',              [LockedSavingsController::class, 'index']);
-    Route::post('/locked-savings',             [LockedSavingsController::class, 'store']);
-    Route::get('/locked-savings/{id}',         [LockedSavingsController::class, 'show']);
+    Route::get('/locked-savings',                [LockedSavingsController::class, 'index']);
+    Route::post('/locked-savings',               [LockedSavingsController::class, 'store']);
+    Route::get('/locked-savings/{id}',           [LockedSavingsController::class, 'show']);
     Route::post('/locked-savings/{id}/withdraw', [LockedSavingsController::class, 'withdraw']);
 
     // ── Auto Savings ───────────────────────────────────────
-    Route::get('/auto-savings',              [AutoSavingsController::class, 'index']);
-    Route::post('/auto-savings',             [AutoSavingsController::class, 'store']);
-    Route::put('/auto-savings/{id}/pause',   [AutoSavingsController::class, 'pause']);
-    Route::put('/auto-savings/{id}/resume',  [AutoSavingsController::class, 'resume']);
-    Route::delete('/auto-savings/{id}',      [AutoSavingsController::class, 'destroy']);
+    Route::get('/auto-savings',             [AutoSavingsController::class, 'index']);
+    Route::post('/auto-savings',            [AutoSavingsController::class, 'store']);
+    Route::put('/auto-savings/{id}/pause',  [AutoSavingsController::class, 'pause']);
+    Route::put('/auto-savings/{id}/resume', [AutoSavingsController::class, 'resume']);
+    Route::delete('/auto-savings/{id}',     [AutoSavingsController::class, 'destroy']);
 
     // ── Profit Tracker ─────────────────────────────────────
-    Route::get('/profit-tracker',                    [ProfitTrackerController::class, 'index']);
-    Route::post('/profit-tracker',                   [ProfitTrackerController::class, 'store']);
-    Route::get('/profit-tracker/summary/monthly',    [ProfitTrackerController::class, 'monthlySummary']);
-    Route::get('/profit-tracker/{id}',               [ProfitTrackerController::class, 'show']);
-    Route::put('/profit-tracker/{id}',               [ProfitTrackerController::class, 'update']);
-    Route::delete('/profit-tracker/{id}',            [ProfitTrackerController::class, 'destroy']);
+    Route::get('/profit-tracker',                 [ProfitTrackerController::class, 'index']);
+    Route::post('/profit-tracker',                [ProfitTrackerController::class, 'store']);
+    Route::get('/profit-tracker/summary/monthly', [ProfitTrackerController::class, 'monthlySummary']);
+    Route::get('/profit-tracker/{id}',            [ProfitTrackerController::class, 'show']);
+    Route::put('/profit-tracker/{id}',            [ProfitTrackerController::class, 'update']);
+    Route::delete('/profit-tracker/{id}',         [ProfitTrackerController::class, 'destroy']);
 
     // ── Payment Methods ────────────────────────────────────
-    Route::get('/payment-methods',                    [PaymentMethodController::class, 'index']);
-    Route::post('/payment-methods',                   [PaymentMethodController::class, 'store']);
-    Route::put('/payment-methods/{id}/set-default',   [PaymentMethodController::class, 'setDefault']);
-    Route::delete('/payment-methods/{id}',            [PaymentMethodController::class, 'destroy']);
+    Route::get('/payment-methods',                  [PaymentMethodController::class, 'index']);
+    Route::post('/payment-methods',                 [PaymentMethodController::class, 'store']);
+    Route::put('/payment-methods/{id}/set-default', [PaymentMethodController::class, 'setDefault']);
+    Route::delete('/payment-methods/{id}',          [PaymentMethodController::class, 'destroy']);
 
     // ── Notifications ──────────────────────────────────────
-    Route::get('/notifications',               [NotificationController::class, 'index']);
-    Route::get('/notifications/unread-count',  [NotificationController::class, 'unreadCount']);
-    Route::put('/notifications/{id}/read',     [NotificationController::class, 'markAsRead']);
-    Route::put('/notifications/read-all',      [NotificationController::class, 'markAllAsRead']);
-    Route::delete('/notifications/{id}',       [NotificationController::class, 'destroy']);
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::put('/notifications/{id}/read',    [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all',     [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}',      [NotificationController::class, 'destroy']);
 
     // ── Support Tickets ────────────────────────────────────
-    Route::get('/support-tickets',                  [SupportTicketController::class, 'index']);
-    Route::get('/support-tickets/{id}',             [SupportTicketController::class, 'show']);
-    Route::post('/support-tickets',                 [SupportTicketController::class, 'store']);
-    Route::post('/support-tickets/{id}/messages',   [SupportTicketController::class, 'reply']);
-    Route::put('/support-tickets/{id}/close',       [SupportTicketController::class, 'close']);
+    Route::get('/support-tickets',                [SupportTicketController::class, 'index']);
+    Route::get('/support-tickets/{id}',           [SupportTicketController::class, 'show']);
+    Route::post('/support-tickets',               [SupportTicketController::class, 'store']);
+    Route::post('/support-tickets/{id}/messages', [SupportTicketController::class, 'reply']);
+    Route::put('/support-tickets/{id}/close',     [SupportTicketController::class, 'close']);
 
     // ── Admin Only ─────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users',        fn() => \App\Models\User::all());
         Route::get('/admin/deposits',     fn() => \App\Models\Deposit::with('user')->latest()->get());
         Route::get('/admin/withdraws',    fn() => \App\Models\Withdraw::with('user')->latest()->get());
-        Route::get('/admin/transactions', [TransactionController::class, 'adminIndex']); // ← ADDED: admin sees all users
+        Route::get('/admin/transactions', [TransactionController::class, 'adminIndex']);
     });
 });
+
+// ── Debug Route ────────────────────────────────────────────
 Route::get('/debug-locked-savings-schema', function () {
     $columns = DB::select("
         SELECT column_name, data_type, is_nullable, column_default
@@ -160,13 +163,13 @@ Route::get('/debug-locked-savings-schema', function () {
         WHERE table_name = 'locked_savings'
         ORDER BY ordinal_position
     ");
-    
+
     $migrations = DB::select("
-        SELECT migration, batch 
-        FROM migrations 
+        SELECT migration, batch
+        FROM migrations
         WHERE migration LIKE '%locked%'
     ");
-    
+
     return response()->json([
         'columns'    => $columns,
         'migrations' => $migrations,
