@@ -124,11 +124,10 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(Transaction::class);
     }
 
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
-    }
-
+   public function userNotifications()
+{
+    return $this->hasMany(Notification::class);
+}
     public function supportTickets()
     {
         return $this->hasMany(SupportTicket::class);
