@@ -160,7 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/test-mail', function () {
     try {
         Mail::raw('Test email from Umoja Financial Services', function ($message) {
-            $message->to('akulluleticia23@gmail.com')
+            $message->to('bixib99881@hotkev.com')
                     ->subject('Test Email - Umoja');
         });
         return response()->json(['status' => 'Email sent successfully']);
