@@ -11,7 +11,7 @@ use Filament\Actions\DeleteBulkAction;
 
 class UsersTable
 {
-    public static function configure(Table $table): Table
+    public static function Z(Table $table): Table
     {
         return $table
             ->columns([
