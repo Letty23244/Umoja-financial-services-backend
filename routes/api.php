@@ -175,3 +175,15 @@ Route::get('/debug-locked-savings-schema', function () {
         'migrations' => $migrations,
     ]);
 });
+
+Route::get('/test-mail', function () {
+    try {
+        Mail::raw('Test email from Umoja', function($message) {
+            $message->to('lenada4621@hotkev.com')
+                    ->subject('Test Email');
+        });
+        return response()->json(['status' => 'Email sent successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
