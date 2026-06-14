@@ -3,12 +3,11 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextColumn; 
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Actions\Action;
 
 class UsersTable
 {
@@ -38,20 +37,10 @@ class UsersTable
                 TextColumn::make('role')
                     ->searchable(),
             ])
-            ->filters([])
+            ->filters([
+                //
+            ])
             ->recordActions([
-                Action::make('verify_email')
-                    ->label('Verify')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Verify Email')
-                    ->modalDescription('Verify this user\'s email?')
-                    ->modalSubmitActionLabel('Yes, Verify')
-                    ->action(fn ($record) => $record->update([
-                        'email_verified_at' => now(),
-                    ]))
-                    ->visible(fn ($record) => is_null($record->email_verified_at)),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
