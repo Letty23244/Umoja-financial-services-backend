@@ -36,7 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
@@ -47,7 +47,8 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
     */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->role === 'admin';
+        // admin, manager, agent can access admin panel
+        return in_array($this->role, ['admin', 'manager', 'agent']);
     }
 
     /*
@@ -60,9 +61,43 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->role === 'admin';
     }
 
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->role === 'agent';
+    }
+
     public function isUser(): bool
     {
         return $this->role === 'user';
+    }
+
+    // Check if user can delete records
+    public function canDelete(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // Check if user can edit records
+    public function canEdit(): bool
+    {
+        return in_array($this->role, ['admin', 'manager']);
+    }
+
+    // Check if user can create records
+    public function canCreate(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // Check if user can view records
+    public function canView(): bool
+    {
+        return in_array($this->role, ['admin', 'manager', 'agent']);
     }
 
     /*
@@ -124,10 +159,11 @@ class User extends Authenticatable implements MustVerifyEmail, FilamentUser
         return $this->hasMany(Transaction::class);
     }
 
-   public function userNotifications()
-{
-    return $this->hasMany(Notification::class);
-}
+    public function userNotifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     public function supportTickets()
     {
         return $this->hasMany(SupportTicket::class);

@@ -18,9 +18,40 @@ class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+
+    protected static ?string $navigationLabel = 'Transactions';
+
+    protected static ?string $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'Transaction';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'manager']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -34,17 +65,15 @@ class TransactionResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListTransactions::route('/'),
+            'index'  => ListTransactions::route('/'),
             'create' => CreateTransaction::route('/create'),
-            'edit' => EditTransaction::route('/{record}/edit'),
+            'edit'   => EditTransaction::route('/{record}/edit'),
         ];
     }
 }

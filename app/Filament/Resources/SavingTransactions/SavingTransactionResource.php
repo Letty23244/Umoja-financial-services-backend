@@ -17,9 +17,40 @@ class SavingTransactionResource extends Resource
 {
     protected static ?string $model = SavingTransaction::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+
+    protected static ?string $navigationLabel = 'Saving Transactions';
+
+    protected static ?string $navigationGroup = 'Savings';
+
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $recordTitleAttribute = 'Saving Transactions';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'info';
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'manager']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -39,9 +70,9 @@ class SavingTransactionResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListSavingTransactions::route('/'),
+            'index'  => ListSavingTransactions::route('/'),
             'create' => CreateSavingTransaction::route('/create'),
-            'edit' => EditSavingTransaction::route('/{record}/edit'),
+            'edit'   => EditSavingTransaction::route('/{record}/edit'),
         ];
     }
 }

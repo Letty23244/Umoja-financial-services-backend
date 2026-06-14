@@ -17,11 +17,41 @@ use Filament\Tables\Table;
 class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
-// Filament 3 syntax
-// Filament 5 syntax - won't work
-protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+
+    protected static ?string $navigationLabel = 'Deposits';
+
+    protected static ?string $navigationGroup = 'Finance';
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'Deposits';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'success';
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'manager']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -35,17 +65,15 @@ protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRect
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListDeposits::route('/'),
+            'index'  => ListDeposits::route('/'),
             'create' => CreateDeposit::route('/create'),
-            'edit' => EditDeposit::route('/{record}/edit'),
+            'edit'   => EditDeposit::route('/{record}/edit'),
         ];
     }
 }

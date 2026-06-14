@@ -18,9 +18,40 @@ class SavingWalletResource extends Resource
 {
     protected static ?string $model = SavingWallet::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWallet;
 
-    protected static ?string $recordTitleAttribute = 'Saving wallet';
+    protected static ?string $navigationLabel = 'Saving Wallets';
+
+    protected static ?string $navigationGroup = 'Savings';
+
+    protected static ?int $navigationSort = 4;
+
+    protected static ?string $recordTitleAttribute = 'Saving Wallet';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'info';
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
+
+    public static function canEdit($record): bool
+    {
+        return in_array(auth()->user()->role, ['admin', 'manager']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()->role === 'admin';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -34,17 +65,15 @@ class SavingWalletResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListSavingWallets::route('/'),
+            'index'  => ListSavingWallets::route('/'),
             'create' => CreateSavingWallet::route('/create'),
-            'edit' => EditSavingWallet::route('/{record}/edit'),
+            'edit'   => EditSavingWallet::route('/{record}/edit'),
         ];
     }
 }
