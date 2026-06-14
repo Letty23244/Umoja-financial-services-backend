@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Mail;
 
 // ── Controllers ────────────────────────────────────────────
 use App\Http\Controllers\Api\AuthController;
@@ -47,7 +48,7 @@ Route::post('/check-verification',  [AuthController::class, 'checkVerification']
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password',  [PasswordResetController::class, 'resetPassword']);
 
-// ── Email Verification (PUBLIC - user is not logged in yet) ───────────
+// ── Email Verification (PUBLIC) ───────────────────────────
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify']);
 Route::post('/email/resend',            [EmailVerificationController::class, 'resend']);
 
@@ -155,32 +156,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
-// ── Debug Route ────────────────────────────────────────────
-Route::get('/debug-locked-savings-schema', function () {
-    $columns = DB::select("
-        SELECT column_name, data_type, is_nullable, column_default
-        FROM information_schema.columns
-        WHERE table_name = 'locked_savings'
-        ORDER BY ordinal_position
-    ");
-
-    $migrations = DB::select("
-        SELECT migration, batch
-        FROM migrations
-        WHERE migration LIKE '%locked%'
-    ");
-
-    return response()->json([
-        'columns'    => $columns,
-        'migrations' => $migrations,
-    ]);
-});
-
+// ── Test Mail Route (REMOVE BEFORE PRESENTATION) ──────────
 Route::get('/test-mail', function () {
     try {
-        Mail::raw('Test email from Umoja', function($message) {
+        Mail::raw('Test email from Umoja Financial Services', function ($message) {
             $message->to('akulluleticia23@gmail.com')
-                    ->subject('Test Email');
+                    ->subject('Test Email - Umoja');
         });
         return response()->json(['status' => 'Email sent successfully']);
     } catch (\Exception $e) {
