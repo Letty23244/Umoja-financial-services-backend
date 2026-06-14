@@ -18,7 +18,7 @@ class LoginHistoryResource extends Resource
 {
     protected static ?string $model = LoginHistory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+   protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'login history';
 

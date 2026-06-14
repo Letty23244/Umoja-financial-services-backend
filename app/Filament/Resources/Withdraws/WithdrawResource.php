@@ -18,7 +18,7 @@ class WithdrawResource extends Resource
 {
     protected static ?string $model = Withdraw::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Withdrawals';
 

@@ -18,7 +18,7 @@ class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+   protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $navigationLabel = 'Deposits';
 
