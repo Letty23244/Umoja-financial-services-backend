@@ -17,15 +17,9 @@ use Filament\Tables\Table;
 class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
-
-   protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
     protected static ?string $navigationLabel = 'Transactions';
-
-    protected static ?string $navigationGroup = 'Finance';
-
     protected static ?int $navigationSort = 3;
-
     protected static ?string $recordTitleAttribute = 'Transaction';
 
     public static function getNavigationBadge(): ?string
