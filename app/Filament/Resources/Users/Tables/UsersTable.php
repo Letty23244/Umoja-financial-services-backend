@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use Filament\Tables\Table;
-use Filament\Tables\Columns\TextColumn; 
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\BadgeColumn;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\DB;
 
 class UsersTable
 {
@@ -22,10 +25,13 @@ class UsersTable
                     ->searchable(),
                 TextColumn::make('email_verified_at')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->label('Email verified at'),
                 TextColumn::make('two_factor_confirmed_at')
                     ->dateTime()
                     ->sortable(),
+                TextColumn::make('role')
+                    ->searchable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -34,13 +40,27 @@ class UsersTable
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('role')
-                    ->searchable(),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
+                // ✅ Verify Email Button
+                Action::make('verify_email')
+                    ->label('Verify Email')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Verify Email')
+                    ->modalDescription('Are you sure you want to verify this user\'s email?')
+                    ->modalSubmitActionLabel('Yes, Verify')
+                    ->action(function ($record) {
+                        $record->update([
+                            'email_verified_at' => now(),
+                        ]);
+                    })
+                    ->visible(fn ($record) => is_null($record->email_verified_at)),
+
                 EditAction::make(),
                 DeleteAction::make(),
             ])
