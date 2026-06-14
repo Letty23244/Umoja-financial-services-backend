@@ -8,19 +8,22 @@ use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Filament\Resources\Users\Tables\UsersTable;
 use App\Models\User;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-   protected static ?string $navigationIcon = 'heroicon-o-users';
-protected static ?string $navigationLabel = 'Manage Users';
-protected static ?string $navigationGroup = 'Management';
-protected static ?int $navigationSort = 6;
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationLabel = 'Manage Users';
+    protected static ?int $navigationSort = 6;
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Management';
+    }
 
     public static function getNavigationBadge(): ?string
     {

@@ -8,20 +8,22 @@ use App\Filament\Resources\Deposits\Pages\ListDeposits;
 use App\Filament\Resources\Deposits\Schemas\DepositForm;
 use App\Filament\Resources\Deposits\Tables\DepositsTable;
 use App\Models\Deposit;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
-
-   protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationLabel = 'Deposits';
-   protected static ?string $navigationGroup = 'Finance';
     protected static ?int $navigationSort = 1;
+    protected static ?string $recordTitleAttribute = 'Deposits';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Finance';
+    }
 
     public static function getNavigationBadge(): ?string
     {

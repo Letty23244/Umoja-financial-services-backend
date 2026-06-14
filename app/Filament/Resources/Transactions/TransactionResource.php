@@ -8,18 +8,23 @@ use App\Filament\Resources\Transactions\Pages\ListTransactions;
 use App\Filament\Resources\Transactions\Schemas\TransactionForm;
 use App\Filament\Resources\Transactions\Tables\TransactionsTable;
 use App\Models\Transaction;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class TransactionResource extends Resource
 {
-   protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
-protected static ?string $navigationLabel = 'Transactions';
-protected static ?string $navigationGroup = 'Finance';
-protected static ?int $navigationSort = 3;
+    protected static ?string $model = Transaction::class;
+    protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
+    protected static ?string $navigationLabel = 'Transactions';
+    protected static ?int $navigationSort = 3;
+    protected static ?string $recordTitleAttribute = 'Transaction';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Finance';
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();

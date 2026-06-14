@@ -8,19 +8,22 @@ use App\Filament\Resources\SavingWallets\Pages\ListSavingWallets;
 use App\Filament\Resources\SavingWallets\Schemas\SavingWalletForm;
 use App\Filament\Resources\SavingWallets\Tables\SavingWalletsTable;
 use App\Models\SavingWallet;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class SavingWalletResource extends Resource
 {
     protected static ?string $model = SavingWallet::class;
-   protected static ?string $navigationIcon = 'heroicon-o-wallet';
-protected static ?string $navigationLabel = 'Saving Wallets';
-protected static ?string $navigationGroup = 'Savings';
-protected static ?int $navigationSort = 5;
+    protected static ?string $navigationIcon = 'heroicon-o-wallet';
+    protected static ?string $navigationLabel = 'Saving Wallets';
+    protected static ?int $navigationSort = 5;
+    protected static ?string $recordTitleAttribute = 'Saving Wallet';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Savings';
+    }
 
     public static function getNavigationBadge(): ?string
     {

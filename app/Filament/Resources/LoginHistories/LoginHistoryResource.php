@@ -8,19 +8,22 @@ use App\Filament\Resources\LoginHistories\Pages\ListLoginHistories;
 use App\Filament\Resources\LoginHistories\Schemas\LoginHistoryForm;
 use App\Filament\Resources\LoginHistories\Tables\LoginHistoriesTable;
 use App\Models\LoginHistory;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class LoginHistoryResource extends Resource
 {
     protected static ?string $model = LoginHistory::class;
-  protected static ?string $navigationIcon = 'heroicon-o-clock';
-protected static ?string $navigationLabel = 'Login Histories';
-protected static ?string $navigationGroup = 'Management';
-protected static ?int $navigationSort = 7;
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
+    protected static ?string $navigationLabel = 'Login Histories';
+    protected static ?int $navigationSort = 7;
+    protected static ?string $recordTitleAttribute = 'Login History';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Management';
+    }
 
     public static function getNavigationBadge(): ?string
     {

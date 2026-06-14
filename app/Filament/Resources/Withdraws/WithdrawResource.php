@@ -8,19 +8,22 @@ use App\Filament\Resources\Withdraws\Pages\ListWithdraws;
 use App\Filament\Resources\Withdraws\Schemas\WithdrawForm;
 use App\Filament\Resources\Withdraws\Tables\WithdrawsTable;
 use App\Models\Withdraw;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
 class WithdrawResource extends Resource
 {
     protected static ?string $model = Withdraw::class;
-   protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
-protected static ?string $navigationLabel = 'Withdrawals';
-protected static ?string $navigationGroup = 'Finance';
-protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+    protected static ?string $navigationLabel = 'Withdrawals';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $recordTitleAttribute = 'Withdraws';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Finance';
+    }
 
     public static function getNavigationBadge(): ?string
     {
