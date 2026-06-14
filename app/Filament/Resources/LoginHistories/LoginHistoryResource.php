@@ -17,10 +17,10 @@ use Filament\Tables\Table;
 class LoginHistoryResource extends Resource
 {
     protected static ?string $model = LoginHistory::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Login Histories';
-    protected static ?int $navigationSort = 7;
-    protected static ?string $recordTitleAttribute = 'Login History';
+  protected static ?string $navigationIcon = 'heroicon-o-clock';
+protected static ?string $navigationLabel = 'Login Histories';
+protected static ?string $navigationGroup = 'Management';
+protected static ?int $navigationSort = 7;
 
     public static function getNavigationBadge(): ?string
     {

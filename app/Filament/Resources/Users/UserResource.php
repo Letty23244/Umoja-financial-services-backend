@@ -17,10 +17,10 @@ use Filament\Tables\Table;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Manage Users';
-    protected static ?int $navigationSort = 6;
-    protected static ?string $recordTitleAttribute = 'name';
+   protected static ?string $navigationIcon = 'heroicon-o-users';
+protected static ?string $navigationLabel = 'Manage Users';
+protected static ?string $navigationGroup = 'Management';
+protected static ?int $navigationSort = 6;
 
     public static function getNavigationBadge(): ?string
     {

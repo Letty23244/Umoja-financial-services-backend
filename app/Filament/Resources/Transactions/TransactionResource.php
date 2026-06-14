@@ -16,12 +16,10 @@ use Filament\Tables\Table;
 
 class TransactionResource extends Resource
 {
-    protected static ?string $model = Transaction::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Transactions';
-    protected static ?int $navigationSort = 3;
-    protected static ?string $recordTitleAttribute = 'Transaction';
-
+   protected static ?string $navigationIcon = 'heroicon-o-arrows-right-left';
+protected static ?string $navigationLabel = 'Transactions';
+protected static ?string $navigationGroup = 'Finance';
+protected static ?int $navigationSort = 3;
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();

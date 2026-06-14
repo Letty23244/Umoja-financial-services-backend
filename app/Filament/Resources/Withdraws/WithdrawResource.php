@@ -17,10 +17,10 @@ use Filament\Tables\Table;
 class WithdrawResource extends Resource
 {
     protected static ?string $model = Withdraw::class;
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Withdrawals';
-    protected static ?int $navigationSort = 2;
-    protected static ?string $recordTitleAttribute = 'Withdraws';
+   protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+protected static ?string $navigationLabel = 'Withdrawals';
+protected static ?string $navigationGroup = 'Finance';
+protected static ?int $navigationSort = 2;
 
     public static function getNavigationBadge(): ?string
     {
