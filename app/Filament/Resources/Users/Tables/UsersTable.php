@@ -4,13 +4,11 @@ namespace App\Filament\Resources\Users\Tables;
 
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\Action;
-use Illuminate\Support\Facades\DB;
 
 class UsersTable
 {
@@ -41,11 +39,8 @@ class UsersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
-                // ✅ Verify Email Button
                 Action::make('verify_email')
                     ->label('Verify Email')
                     ->icon('heroicon-o-check-circle')
@@ -60,7 +55,6 @@ class UsersTable
                         ]);
                     })
                     ->visible(fn ($record) => is_null($record->email_verified_at)),
-
                 EditAction::make(),
                 DeleteAction::make(),
             ])
