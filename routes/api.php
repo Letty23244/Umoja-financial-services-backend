@@ -179,3 +179,15 @@ Route::get('/fix-locked', function () {
         'remaining' => \App\Models\LockedSavings::count(),
     ]);
 });
+
+Route::get('/debug-locked', function () {
+    $all = \App\Models\LockedSavings::all();
+    return response()->json([
+        'total'    => $all->count(),
+        'savings'  => $all->map(fn($s) => [
+            'id'      => $s->id,
+            'user_id' => $s->user_id,
+            'name'    => $s->name,
+        ]),
+    ]);
+});
