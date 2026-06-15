@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LockedSavings;
 use App\Models\SavingWallet;
-use App\Models\Notification;  // ← change this
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +17,8 @@ class LockedSavingsController extends Controller
     public function index(): JsonResponse
     {
         try {
-            $savings = LockedSavings::where('user_id', Auth::id())
+            $userId  = Auth::id();
+            $savings = LockedSavings::where('user_id', $userId)
                 ->latest()
                 ->get()
                 ->map(fn($s) => [
@@ -35,8 +36,10 @@ class LockedSavingsController extends Controller
                 ]);
 
             return response()->json([
-                'status' => 'success',
-                'data'   => $savings,
+                'status'   => 'success',
+                'user_id'  => $userId, // ← debug
+                'count'    => $savings->count(), // ← debug
+                'data'     => $savings,
             ]);
 
         } catch (\Exception $e) {
@@ -60,9 +63,10 @@ class LockedSavingsController extends Controller
 
         $durationMonths = (int) $request->duration_months;
         $durationYears  = max(1, (int) ceil($durationMonths / 12));
+        $userId         = Auth::id();
 
         $wallet = SavingWallet::firstOrCreate(
-            ['user_id' => Auth::id()],
+            ['user_id' => $userId],
             ['name' => 'My Savings Wallet', 'balance' => 0]
         );
 
@@ -70,7 +74,7 @@ class LockedSavingsController extends Controller
             DB::beginTransaction();
 
             $lockedSaving = LockedSavings::create([
-                'user_id'             => Auth::id(),
+                'user_id'             => $userId,
                 'saving_wallet_id'    => $wallet->id,
                 'name'                => $request->name,
                 'amount'              => $request->amount,
@@ -80,10 +84,15 @@ class LockedSavingsController extends Controller
                 'status'              => 'active',
             ]);
 
-            // ✅ Use Notification instead of UserNotification
+            \Log::info('Locked saving created', [
+                'id'      => $lockedSaving->id,
+                'user_id' => $userId,
+                'wallet'  => $wallet->id,
+            ]);
+
             try {
                 Notification::create([
-                    'user_id' => Auth::id(),
+                    'user_id' => $userId,
                     'title'   => '🔒 Savings Locked',
                     'message' => 'UGX ' . number_format($request->amount) .
                         ' locked in "' . $request->name .
@@ -99,6 +108,13 @@ class LockedSavingsController extends Controller
 
             DB::commit();
 
+            // ← Verify it was saved
+            $verify = LockedSavings::find($lockedSaving->id);
+            \Log::info('Verify after commit', [
+                'found'   => $verify ? true : false,
+                'user_id' => $verify?->user_id,
+            ]);
+
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Savings locked successfully',
@@ -113,6 +129,11 @@ class LockedSavingsController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Locked saving failed', [
+                'error'   => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'user_id' => $userId,
+            ]);
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage(),
@@ -177,7 +198,6 @@ class LockedSavingsController extends Controller
                 'withdrawn_at' => now(),
             ]);
 
-            // ✅ Use Notification instead of UserNotification
             try {
                 Notification::create([
                     'user_id' => Auth::id(),
