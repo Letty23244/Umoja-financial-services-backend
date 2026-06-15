@@ -168,3 +168,14 @@ Route::get('/test-mail', function () {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
+
+Route::get('/fix-locked-savings', function () {
+    // Delete old broken locked savings records
+    \App\Models\LockedSavings::whereNull('saving_wallet_id')->delete();
+    
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Old broken records deleted',
+        'remaining' => \App\Models\LockedSavings::count(),
+    ]);
+});

@@ -11,7 +11,7 @@ class LockedSavings extends Model
 
     protected $fillable = [
         'user_id',
-        'saving_wallet_id', // 'saving_wallet_id' ← REMOVED, column was dropped in migration
+        'saving_wallet_id', 
         'name',
         'amount',
         'interest_rate',
