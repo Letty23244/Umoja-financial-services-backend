@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LockedSavings;
 use App\Models\SavingWallet;
-use App\Models\UserNotification;
+use App\Models\Notification;  // ← change this
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +34,10 @@ class LockedSavingsController extends Controller
                     'created_at'      => (string) $s->created_at,
                 ]);
 
-            return response()->json(['status' => 'success', 'data' => $savings]);
+            return response()->json([
+                'status' => 'success',
+                'data'   => $savings,
+            ]);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -77,12 +80,22 @@ class LockedSavingsController extends Controller
                 'status'              => 'active',
             ]);
 
-            UserNotification::notify(
-                Auth::id(),
-                '🔒 Savings Locked',
-                'UGX ' . number_format($request->amount) . ' locked in "' . $request->name . '" for ' . $durationMonths . ' month(s). Matures on ' . $lockedSaving->locked_until->format('d M Y') . '.',
-                'locked_savings'
-            );
+            // ✅ Use Notification instead of UserNotification
+            try {
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'title'   => '🔒 Savings Locked',
+                    'message' => 'UGX ' . number_format($request->amount) .
+                        ' locked in "' . $request->name .
+                        '" for ' . $durationMonths .
+                        ' month(s). Matures on ' .
+                        $lockedSaving->locked_until->format('d M Y') . '.',
+                    'type'    => 'locked_savings',
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $notifError) {
+                \Log::error('Notification error: ' . $notifError->getMessage());
+            }
 
             DB::commit();
 
@@ -113,7 +126,8 @@ class LockedSavingsController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $saving = LockedSavings::where('user_id', Auth::id())->findOrFail($id);
+            $saving = LockedSavings::where('user_id', Auth::id())
+                ->findOrFail($id);
 
             return response()->json([
                 'status' => 'success',
@@ -152,7 +166,8 @@ class LockedSavingsController extends Controller
             if (!$saving->hasMatured()) {
                 return response()->json([
                     'status'       => 'error',
-                    'message'      => 'Savings not yet matured. Locked until ' . $saving->locked_until?->format('d M Y'),
+                    'message'      => 'Savings not yet matured. Locked until ' .
+                        $saving->locked_until?->format('d M Y'),
                     'locked_until' => $saving->locked_until?->format('d M Y'),
                 ], 422);
             }
@@ -162,12 +177,20 @@ class LockedSavingsController extends Controller
                 'withdrawn_at' => now(),
             ]);
 
-            UserNotification::notify(
-                Auth::id(),
-                '🔓 Locked Savings Withdrawn',
-                'UGX ' . number_format($saving->maturity_amount) . ' (including interest) withdrawn from "' . $saving->name . '".',
-                'locked_savings'
-            );
+            // ✅ Use Notification instead of UserNotification
+            try {
+                Notification::create([
+                    'user_id' => Auth::id(),
+                    'title'   => '🔓 Locked Savings Withdrawn',
+                    'message' => 'UGX ' . number_format($saving->maturity_amount) .
+                        ' (including interest) withdrawn from "' .
+                        $saving->name . '".',
+                    'type'    => 'locked_savings',
+                    'is_read' => false,
+                ]);
+            } catch (\Exception $notifError) {
+                \Log::error('Notification error: ' . $notifError->getMessage());
+            }
 
             return response()->json([
                 'status'          => 'success',
