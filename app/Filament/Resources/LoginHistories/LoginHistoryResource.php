@@ -11,6 +11,7 @@ use App\Models\LoginHistory;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use BackedEnum;  
 
 class LoginHistoryResource extends Resource
 {
