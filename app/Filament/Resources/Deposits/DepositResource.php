@@ -15,7 +15,10 @@ use Filament\Tables\Table;
 class DepositResource extends Resource
 {
     protected static ?string $model = Deposit::class;
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    public static function getNavigationIcon(): string|BackedEnum|null
+{
+    return 'heroicon-o-banknotes';
+}
     protected static ?string $navigationLabel = 'Deposits';
     protected static ?int $navigationSort = 1;
     protected static ?string $recordTitleAttribute = 'Deposits';

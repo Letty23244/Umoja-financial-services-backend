@@ -15,7 +15,11 @@ use Filament\Tables\Table;
 class LoginHistoryResource extends Resource
 {
     protected static ?string $model = LoginHistory::class;
-    protected static ?string $navigationIcon = 'heroicon-o-clock';
+    public static function getNavigationIcon(): string|BackedEnum|null
+{
+    return 'heroicon-o-clock';
+}
+
     protected static ?string $navigationLabel = 'Login Histories';
     protected static ?int $navigationSort = 7;
     protected static ?string $recordTitleAttribute = 'Login History';

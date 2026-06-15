@@ -15,7 +15,10 @@ use Filament\Tables\Table;
 class WithdrawResource extends Resource
 {
     protected static ?string $model = Withdraw::class;
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
+   public static function getNavigationIcon(): string|BackedEnum|null
+{
+    return 'heroicon-o-arrow-up-tray';
+}
     protected static ?string $navigationLabel = 'Withdrawals';
     protected static ?int $navigationSort = 2;
     protected static ?string $recordTitleAttribute = 'Withdraws';

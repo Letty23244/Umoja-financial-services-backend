@@ -15,7 +15,11 @@ use Filament\Tables\Table;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+  // UserResource
+public static function getNavigationIcon(): string|BackedEnum|null
+{
+    return 'heroicon-o-users';
+}
     protected static ?string $navigationLabel = 'Manage Users';
     protected static ?int $navigationSort = 6;
     protected static ?string $recordTitleAttribute = 'name';
