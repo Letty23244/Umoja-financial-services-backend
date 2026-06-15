@@ -191,3 +191,24 @@ Route::get('/debug-locked', function () {
         ]),
     ]);
 });
+
+// Check all locked savings in DB
+Route::get('/all-locked', function () {
+    $savings = \App\Models\LockedSavings::all();
+    return response()->json([
+        'total'   => $savings->count(),
+        'savings' => $savings->map(fn($s) => [
+            'id'      => $s->id,
+            'user_id' => $s->user_id,
+            'name'    => $s->name,
+        ]),
+    ]);
+});
+
+// Check logged in user
+Route::middleware('auth:sanctum')->get('/my-id', function () {
+    return response()->json([
+        'user_id' => \Illuminate\Support\Facades\Auth::id(),
+        'email'   => \Illuminate\Support\Facades\Auth::user()->email,
+    ]);
+});
