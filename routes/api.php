@@ -212,3 +212,49 @@ Route::middleware('auth:sanctum')->get('/my-id', function () {
         'email'   => \Illuminate\Support\Facades\Auth::user()->email,
     ]);
 });
+
+Route::get('/setup-demo', function () {
+    $users = [
+        [
+            'name'              => 'Sarah Nakato',
+            'email'             => 'sarah@umoja.com',
+            'phone'             => '0700000001',
+            'password'          => \Illuminate\Support\Facades\Hash::make('demo@123'),
+            'role'              => 'user',
+            'email_verified_at' => now(),
+        ],
+        [
+            'name'              => 'Grace Auma',
+            'email'             => 'grace@umoja.com',
+            'phone'             => '0700000002',
+            'password'          => \Illuminate\Support\Facades\Hash::make('demo@123'),
+            'role'              => 'user',
+            'email_verified_at' => now(),
+        ],
+        [
+            'name'              => 'Mary Nalwoga',
+            'email'             => 'mary@umoja.com',
+            'phone'             => '0700000003',
+            'password'          => \Illuminate\Support\Facades\Hash::make('demo@123'),
+            'role'              => 'user',
+            'email_verified_at' => now(),
+        ],
+    ];
+
+    foreach ($users as $userData) {
+        \App\Models\User::firstOrCreate(
+            ['email' => $userData['email']],
+            $userData
+        );
+    }
+
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'Demo users created',
+        'logins'  => [
+            ['email' => 'sarah@umoja.com',  'password' => 'demo@123'],
+            ['email' => 'grace@umoja.com',  'password' => 'demo@123'],
+            ['email' => 'mary@umoja.com',   'password' => 'demo@123'],
+        ],
+    ]);
+});
