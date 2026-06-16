@@ -32,6 +32,13 @@ Route::options('{any}', function () {
         ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 })->where('any', '.*');
 
+
+Route::get('/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    return response()->json(['status' => 'Cache cleared!']);
+});
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES
@@ -212,6 +219,17 @@ Route::middleware('auth:sanctum')->get('/my-id', function () {
         'email'   => \Illuminate\Support\Facades\Auth::user()->email,
     ]);
 });
+
+Route::get('/check-user/{email}', function ($email) {
+    $user = \App\Models\User::where('email', $email)->first();
+    return response()->json([
+        'found'              => $user ? true : false,
+        'email_verified_at'  => $user?->email_verified_at,
+        'has_verified'       => $user?->hasVerifiedEmail(),
+    ]);
+});
+
+
 
 Route::get('/setup-demo', function () {
     $users = [
