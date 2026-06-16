@@ -276,3 +276,17 @@ Route::get('/setup-demo', function () {
         ],
     ]);
 });
+
+Route::get('/verify-demo-users', function () {
+    $emails = ['sarah@umoja.com', 'grace@umoja.com', 'mary@umoja.com'];
+    
+    foreach ($emails as $email) {
+        \App\Models\User::where('email', $email)
+            ->update(['email_verified_at' => now()]);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Demo users verified',
+    ]);
+});
