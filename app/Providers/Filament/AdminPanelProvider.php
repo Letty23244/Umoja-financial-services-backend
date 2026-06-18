@@ -2,15 +2,14 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
 use App\Filament\Widgets\DashboardStatsOverview;
 use App\Filament\Widgets\DepositsChart;
-use App\Filament\Widgets\LoansChart;
 use App\Filament\Widgets\TransactionsChart;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -48,7 +47,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                // ❌ Removed FilamentInfoWidget (this was showing "filament v5.6.5")
                 DashboardStatsOverview::class,
                 DepositsChart::class,
                 TransactionsChart::class,
