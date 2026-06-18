@@ -8,8 +8,8 @@ use Illuminate\Support\Carbon;
 
 class TransactionsChart extends ChartWidget
 {
-    protected  ?string $heading = 'Transactions by Type (Last 6 Months)';
-  protected static ?int $sort = 4; // static ✅
+    protected ?string $heading = 'Transactions by Type (Last 6 Months)';
+    protected static ?int $sort = 4;
 
     protected function getData(): array
     {
@@ -21,25 +21,33 @@ class TransactionsChart extends ChartWidget
         $withdrawals = $months->map(fn ($m) => Transaction::whereYear('created_at', $m->year)
             ->whereMonth('created_at', $m->month)->where('type', 'withdrawal')->count());
 
-        $repayments = $months->map(fn ($m) => Transaction::whereYear('created_at', $m->year)
-            ->whereMonth('created_at', $m->month)->where('type', 'loan_repayment')->count());
+        $savings = $months->map(fn ($m) => Transaction::whereYear('created_at', $m->year)
+            ->whereMonth('created_at', $m->month)->where('type', 'saving')->count());
+
+        $lockedSavings = $months->map(fn ($m) => Transaction::whereYear('created_at', $m->year)
+            ->whereMonth('created_at', $m->month)->where('type', 'locked_saving')->count());
 
         return [
             'datasets' => [
                 [
                     'label'           => 'Deposits',
                     'data'            => $deposits->values()->toArray(),
-                    'backgroundColor' => '#22c55e',
+                    'backgroundColor' => '#22c55e', // green
                 ],
                 [
                     'label'           => 'Withdrawals',
                     'data'            => $withdrawals->values()->toArray(),
-                    'backgroundColor' => '#ef4444',
+                    'backgroundColor' => '#ef4444', // red
                 ],
                 [
-                    'label'           => 'Loan Repayments',
-                    'data'            => $repayments->values()->toArray(),
-                    'backgroundColor' => '#3b82f6',
+                    'label'           => 'Savings',
+                    'data'            => $savings->values()->toArray(),
+                    'backgroundColor' => '#3b82f6', // blue
+                ],
+                [
+                    'label'           => 'Locked Savings',
+                    'data'            => $lockedSavings->values()->toArray(),
+                    'backgroundColor' => '#f59e0b', // amber/orange
                 ],
             ],
             'labels' => $months->map(fn ($month) => $month->format('M Y'))->toArray(),
