@@ -15,6 +15,14 @@ class Dashboard extends BaseDashboard
 
     public function getHeading(): string
     {
-        return 'Welcome to Umoja Financial Services';
+        return 'Umoja Financial Services'
+                 ;
+        
     }
+
+    public function getSubheading(): ?string
+{
+    return 'Your complete financial command center — track savings growth, monitor transactions, 
+    and support your community with confidence.';
+}
 }
